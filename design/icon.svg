@@ -4,22 +4,14 @@
       <stop offset="0" stop-color="#3aa2ec"/>
       <stop offset="1" stop-color="#005daa"/>
     </linearGradient>
-    <linearGradient id="cursor" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffe08a"/>
-      <stop offset="1" stop-color="#f5a623"/>
-    </linearGradient>
   </defs>
-  <!-- 背景：圆角方块，品牌蓝渐变 -->
+  <!-- 背景：圆角方块，品牌蓝渐变（唯一图形层级，保持极简） -->
   <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
-  <!-- 顶部高光（玻璃感） -->
-  <rect x="16" y="16" width="480" height="196" rx="112" fill="#ffffff" opacity="0.08"/>
-  <!-- 软件名 Md：白色超粗体 -->
-  <text x="226" y="318" font-family="'Segoe UI','Segoe UI Variable Text',Arial,sans-serif" font-size="272" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-14">Md</text>
-  <!-- 编辑光标：Md 右侧竖线（暖黄色与蓝色背景对比，明确"光标"意象） -->
-  <rect x="440" y="124" width="20" height="220" rx="10" fill="url(#cursor)"/>
-  <!-- 底部 Markdown 语法横线（列表/分隔感） -->
-  <g opacity="0.55">
-    <rect x="151" y="402" width="210" height="12" rx="6" fill="#ffffff"/>
-    <rect x="191" y="428" width="130" height="12" rx="6" fill="#ffffff"/>
+  <!-- 符号：白色粗笔画 M（两竖 + 中间 V，圆头圆角，参考 Typora 式几何标记） -->
+  <g fill="none" stroke="#ffffff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 150 128 V 384"/>
+    <path d="M 150 128 L 256 306"/>
+    <path d="M 256 306 L 362 128"/>
+    <path d="M 362 128 V 384"/>
   </g>
 </svg>
