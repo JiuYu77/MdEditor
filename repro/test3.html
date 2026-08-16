@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>outline + menubar verification</title>
+  <style>
+    :root { --border:#d4d4d4; --hover:rgba(0,0,0,.06); --menu-bg:#fafafa; --sidebar-fg:#1f1f1f; --accent:#007acc; --editor-bg:#fff; --sidebar-bg:#f3f3f3; --editor-fg:#1f1f1f; --activity-bg:#e8e8e8; --activity-fg:#8a8a8a; --title-bar-bg:#fff; --title-bar-fg:#111; --status-bg:#007acc; --status-fg:#fff; --scrollbar-thumb:rgba(0,0,0,.32); --scrollbar-thumb-hover:rgba(0,0,0,.5); --table-header-bg:#e8e8e8; --table-bg:#f7f7f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #editor { height: 50vh; border-bottom: 1px solid var(--border); }
+    #editor .cm-editor { height: 100%; font-size: 14px; }
+    #editor .cm-scroller { overflow: auto; line-height: 1.7; }
+    #editor .cm-content { padding: 8px 16px; }
+    .md-heading { font-weight: 700; }
+    .md-heading-1 { font-size: 1.6em; }
+    .md-heading-2 { font-size: 1.3em; }
+    #menubar { position: relative; }
+    .menubar { height: 28px; display: flex; background: var(--menu-bg); border-bottom: 1px solid var(--border); position: relative; z-index: 30; user-select: none; }
+    .menu-root { position: relative; display: flex; }
+    .menu-label { padding: 0 12px; font-size: 12px; border: none; background: transparent; color: var(--sidebar-fg); cursor: default; position: relative; z-index: 60; }
+    .menu-label:hover, .menu-label.open { background: var(--hover); }
+    .menu-overlay { position: fixed; inset: 0; z-index: 40; }
+    .menu-dropdown { position: absolute; top: 100%; left: 0; min-width: 200px; background: var(--menu-bg); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.2); padding: 4px; z-index: 50; }
+    .menu-item { display: flex; gap: 8px; width: 100%; padding: 5px 10px; font-size: 12px; border: none; background: transparent; color: var(--sidebar-fg); text-align: left; border-radius: 4px; }
+    .menu-item:hover, .menu-item.focused { background: var(--accent); color: #fff; }
+    .menu-item.disabled { opacity: .45; pointer-events: none; }
+    .menu-separator { height: 1px; background: var(--border); margin: 4px 10px; }
+    #out { padding: 8px 12px; font: 12px/1.6 monospace; white-space: pre; color: #0a0; background: #111; min-height: 120px; }
+  </style>
+</head>
+<body>
+  <div id="menubar"></div>
+  <div id="editor"></div>
+  <div id="out"></div>
+  <script type="module">
+    import React from "react";
+    import { createRoot } from "react-dom/client";
+    import { createEditor } from "/packages/md-editor/src/index.ts";
+    import { MenuBar } from "/src/components/MenuBar.tsx";
+
+    const log = (s) => { document.getElementById("out").textContent += s + "\n"; };
+    const ed = createEditor(document.getElementById("editor"), { mode: "wysiwyg", lineNumbers: true });
+    window.__ed = ed;
+
+    window.__setDoc = (t) => ed.setValue(t);
+    window.__outline = () => JSON.stringify(ed.getOutline());
+    window.__jump = (pos) => ed.setCursor(pos, false);
+    window.__cursor = () => JSON.stringify(ed.getCursor());
+    window.__selTest = () => {
+      const out = [];
+      ed.setValue("hello world");
+      ed.selectAll();
+      out.push("selectAll->" + JSON.stringify(ed.getSelection()));
+      ed.setCursor(2);
+      ed.replaceSelection("XY");
+      out.push("insert->" + JSON.stringify(ed.getValue()));
+      ed.setValue("hello world");
+      ed.selectAll();
+      ed.replaceSelection("OK");
+      out.push("replace->" + JSON.stringify(ed.getValue()));
+      return out.join(" | ");
+    };
+    window.__cursorToLine = (line) => {
+      const doc = ed.getValue();
+      let pos = 0;
+      const lines = doc.split("\n");
+      for (let i = 0; i < line - 1; i++) pos += lines[i].length + 1;
+      ed.setCursor(pos, false);
+      return pos;
+    };
+    window.__lineState = (line) => {
+      const dom = document.querySelectorAll(".cm-line")[line - 1];
+      if (!dom) return "no-dom";
+      return {
+        text: dom.textContent,
+        cursorSource: dom.classList.contains("md-cursor-source"),
+        heading: !!dom.querySelector(".md-heading"),
+        bullet: !!dom.querySelector(".md-bullet"),
+        strong: !!dom.querySelector(".md-strong"),
+      };
+    };
+    window.__toggleCursorSource = () => ed.setCursorLineSource(!ed.__lastSrc);
+    window.__setCursorSource = (v) => ed.setCursorLineSource(v);
+    window.__getValue = () => ed.getValue();
+    window.__taskState = () => {
+      ed.setValue("- [ ] 待办\n- [x] 完成");
+      const boxes = document.querySelectorAll(".md-task-checkbox");
+      const b = boxes[0].getBoundingClientRect();
+      return {
+        boxCount: boxes.length,
+        checked: Array.from(document.querySelectorAll(".md-task-checkbox")).map((x) => x.classList.contains("checked")),
+        doneCount: document.querySelectorAll(".md-task-done").length,
+        doneText: document.querySelector(".md-task-done")?.textContent ?? null,
+        value: ed.getValue(),
+        clickX: b.left + b.width / 2,
+        clickY: b.top + b.height / 2,
+      };
+    };
+    window.__codeBlockState = () => {
+      ed.setValue("```js\nconst a = 1;\n```");
+      return Array.from(document.querySelectorAll(".cm-line")).map((l) => ({
+        cls: l.className,
+        text: l.textContent.slice(0, 24),
+        mono: getComputedStyle(l).fontFamily.includes("Mono") || getComputedStyle(l).fontFamily.includes("Consolas"),
+        langChip: !!l.querySelector(".md-code-lang"),
+        langText: l.querySelector(".md-code-lang")?.textContent ?? null,
+      }));
+    };
+
+    // MenuBar 渲染 + 点击记录
+    const clicked = [];
+    window.__clicked = () => JSON.stringify(clicked);
+    window.__renderMenu = () => {
+      createRoot(document.getElementById("menubar")).render(
+        React.createElement(MenuBar, {
+          menus: [
+            { id: "file", label: "文件", items: [
+              { id: "new", label: "新建文件", shortcut: "Ctrl+N", onClick: () => clicked.push("new") },
+              { id: "open", label: "打开文件夹…", disabled: true },
+              { separator: true },
+              { id: "save", label: "保存", shortcut: "Ctrl+S", onClick: () => clicked.push("save") },
+            ]},
+            { id: "view", label: "视图", items: [
+              { id: "mode", label: "切换编辑模式", shortcut: "Ctrl+/", onClick: () => clicked.push("mode") },
+              { id: "ln", label: "显示行号", checked: true, onClick: () => clicked.push("ln") },
+            ]},
+          ],
+        }),
+      );
+    };
+    window.__openMenuCount = () => document.querySelectorAll(".menu-dropdown").length;
+    window.__visibleItemLabels = () =>
+      Array.from(document.querySelectorAll(".menu-item")).map((b) => b.textContent.trim());
+    log("ready");
+  </script>
+</body>
+</html>

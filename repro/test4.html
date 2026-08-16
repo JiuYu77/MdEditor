@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>outline tree verification</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #host { width: 320px; height: 600px; border: 1px solid #ccc; }
+    #out { padding: 8px 12px; font: 12px/1.6 monospace; white-space: pre; color: #0a0; background: #111; min-height: 100px; }
+  </style>
+</head>
+<body>
+  <div id="host"></div>
+  <div id="out"></div>
+  <script type="module">
+    import React from "react";
+    import { createRoot } from "react-dom/client";
+    import "/src/App.css";
+    import "@fortawesome/fontawesome-free/css/all.min.css";
+    import "/src/i18n.ts";
+    import { Sidebar } from "/src/components/Sidebar.tsx";
+
+    const log = (s) => { document.getElementById("out").textContent += s + "\n"; };
+    const OUTLINE = [
+      { level: 1, text: "A", line: 1, pos: 0 },
+      { level: 2, text: "A1", line: 2, pos: 5 },
+      { level: 3, text: "A1a", line: 3, pos: 10 },
+      { level: 2, text: "A2", line: 4, pos: 15 },
+      { level: 1, text: "B", line: 5, pos: 20 },
+      { level: 2, text: "B1", line: 6, pos: 25 },
+    ];
+    const clicked = [];
+    let activeIdx = -1;
+
+    const root = createRoot(document.getElementById("host"));
+    function renderAll() {
+      root.render(
+        React.createElement(Sidebar, {
+          panel: "outline",
+          rootDir: "",
+          selected: null,
+          onSelect: () => {},
+          onClose: () => {},
+          useNativeTitleBar: false,
+          onToggleNativeTitleBar: () => {},
+          showLineNumbers: true,
+          onToggleShowLineNumbers: () => {},
+          language: "zh-CN",
+          onChangeLanguage: () => {},
+          startupBehavior: "welcome",
+          onStartupBehaviorChange: () => {},
+          width: 300,
+          onWidthChange: () => {},
+          outline: OUTLINE,
+          activeOutlineIndex: activeIdx,
+          onOutlineJump: (pos) => clicked.push(pos),
+          treeRefreshKey: 0,
+          onOpenFolder: () => {},
+        }),
+      );
+    }
+    window.__stats = () => ({
+      items: document.querySelectorAll(".outline-item").length,
+      carets: document.querySelectorAll(".outline-caret").length,
+      caretGlyphs: Array.from(document.querySelectorAll(".outline-caret i")).map((c) => c.className),
+      texts: Array.from(document.querySelectorAll(".outline-text")).map((t) => t.textContent),
+      activeTexts: Array.from(document.querySelectorAll(".outline-item.active .outline-text")).map((t) => t.textContent),
+      clicked: JSON.stringify(clicked),
+    });
+    window.__setActive = (i) => { activeIdx = i; renderAll(); };
+    window.__clickCaret = (i) => { document.querySelectorAll(".outline-caret")[i].click(); };
+    window.__clickItem = (i) => { document.querySelectorAll(".outline-item")[i].click(); };
+    renderAll();
+    log("ready");
+  </script>
+</body>
+</html>

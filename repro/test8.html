@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>code block full verification</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #editor { height: 62vh; border-bottom: 1px solid #ccc; }
+    #editor .cm-editor { height: 100%; font-size: 14px; }
+    #editor .cm-scroller { overflow: auto; line-height: 1.7; }
+    #editor .cm-content { padding: 8px 16px; }
+    #out { padding: 8px 12px; font: 12px/1.6 monospace; white-space: pre; color: #0a0; background: #111; min-height: 80px; }
+  </style>
+</head>
+<body>
+  <div id="editor"></div>
+  <div id="out"></div>
+  <script type="module">
+    import "/src/App.css";
+    import "@fortawesome/fontawesome-free/css/all.min.css";
+    import { createEditor } from "/packages/md-editor/src/index.ts";
+
+    const log = (s) => { document.getElementById("out").textContent += s + "\n"; };
+    window.addEventListener("error", (e) => log("[error] " + e.message));
+    const ed = createEditor(document.getElementById("editor"), { mode: "wysiwyg", lineNumbers: true });
+    window.__ed = ed;
+
+    window.__setValue = (t) => ed.setValue(t);
+    window.__value = () => ed.getValue();
+    window.__cursorToLine = (line) => {
+      const lines = ed.getValue().split("\n");
+      let pos = 0;
+      for (let i = 0; i < line - 1; i++) pos += lines[i].length + 1;
+      ed.setCursor(pos, false);
+      return pos;
+    };
+    window.__codeState = () =>
+      Array.from(document.querySelectorAll("#editor .cm-line")).map((l) => ({
+        cls: l.className,
+        text: l.textContent.slice(0, 26),
+        num: getComputedStyle(l, "::before").content,
+        tok: Array.from(l.querySelectorAll("[class^='tok-'], [class*=' tok-']")).map((s) => s.className).slice(0, 3),
+        toolbar: !!l.querySelector(".md-code-toolbar"),
+        copyBtn: !!l.querySelector(".md-code-copy"),
+      }));
+    window.__clickToolbar = (i) => {
+      const btns = document.querySelectorAll(".md-code-toolbar button");
+      btns[i].click();
+    };
+    window.__clickLangItem = (i) => document.querySelectorAll(".md-code-lang-item")[i].click();
+    window.__langPickerOpen = () => !!document.querySelector(".md-code-lang-picker");
+    window.__foldPlaceholder = () => {
+      const el = document.querySelector(".cm-foldPlaceholder");
+      return el ? el.textContent : null;
+    };
+    window.__logs = () => document.getElementById("out").textContent;
+    window.__treeDump = () => {
+      let hlCount = 0;
+      let sample = [];
+      document.querySelectorAll("#editor .cm-line span").forEach((s) => {
+        if (s.className && /^ͼ/.test(s.className)) {
+          hlCount++;
+          if (sample.length < 4) sample.push(s.className + ":" + s.textContent.slice(0, 14));
+        }
+      });
+      return { hlCount, sample };
+    };
+    window.__moveCursor = (line) => {
+      const lines = ed.getValue().split("\n");
+      let pos = 0;
+      for (let i = 0; i < line - 1; i++) pos += lines[i].length + 1;
+      ed.setCursor(pos, false);
+    };
+    // ── 对照实验：同步 codeLanguages（与主编辑器一致）──
+    import { EditorState } from "@codemirror/state";
+    import { EditorView } from "@codemirror/view";
+    import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+    import { syntaxHighlighting, defaultHighlightStyle, syntaxTree } from "@codemirror/language";
+    import { codeLanguages } from "/packages/md-editor/src/wysiwyg/index.ts";
+    const minHost = document.createElement("div");
+    minHost.id = "min-editor";
+    minHost.style.cssText = "display:none";
+    document.body.appendChild(minHost);
+    const minState = EditorState.create({
+      doc: "```c\n#include <stdio.h>\nint main() { return 0; }\n```",
+      extensions: [markdown({ base: markdownLanguage, codeLanguages }), syntaxHighlighting(defaultHighlightStyle)],
+    });
+    const minView = new EditorView({ state: minState, parent: minHost });
+    window.__minTree = () => {
+      const tree = syntaxTree(minView.state);
+      const names = [];
+      tree.iterate({ enter: (n) => names.push(`${n.name}[${n.from},${n.to}]`) });
+      return names.slice(0, 20).join(" ");
+    };
+    window.__minTok = () => document.querySelectorAll("#min-editor [class*='ͼ']").length;
+    window.__minClasses = () => {
+      const set = new Set();
+      document.querySelectorAll("#min-editor .cm-line span").forEach((s) => s.className && s.className.split(" ").forEach((c) => set.add(c)));
+      return Array.from(set).slice(0, 10).join(",");
+    };
+    window.__minTrigger = () => {
+      minView.dispatch({ selection: { anchor: 10 } });
+      minView.dispatch({ selection: { anchor: 0 } });
+    };
+    // ── 对照2：单独 StreamLanguage(C) + 高亮（验证基础链路）──
+    import { StreamLanguage } from "@codemirror/language";
+    import { c as cMode } from "@codemirror/legacy-modes/mode/clike";
+    const cHost = document.createElement("div");
+    cHost.id = "c-editor";
+    cHost.style.cssText = "display:none";
+    document.body.appendChild(cHost);
+    const cView = new EditorView({
+      state: EditorState.create({
+        doc: "#include <stdio.h>\nint main() { return 0; }",
+        extensions: [StreamLanguage.define(cMode), syntaxHighlighting(defaultHighlightStyle)],
+      }),
+      parent: cHost,
+    });
+    window.__cTok = () => document.querySelectorAll("#c-editor [class*='tok-']").length;
+    window.__cClasses = () => {
+      const spans = document.querySelectorAll("#c-editor .cm-line span");
+      const classes = new Set();
+      spans.forEach((s) => s.className && s.className.split(" ").forEach((c) => classes.add(c)));
+      return Array.from(classes).slice(0, 12).join(",");
+    };
+    log("ready");
+  </script>
+</body>
+</html>

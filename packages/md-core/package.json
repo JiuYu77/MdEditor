@@ -1,0 +1,22 @@
+{
+  "name": "@mdeditor/md-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Markdown 解析 + 渲染核心库（纯逻辑，无 UI/框架依赖）",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "markdown-it": "^14.1.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "typescript": "^5.7.0"
+  }
+}

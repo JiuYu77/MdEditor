@@ -1,0 +1,16 @@
+# 统一行尾为 LF(仓库存储与工作副本一致),避免 Windows 下 autocrlf 的 CRLF 转换警告
+* text=auto eol=lf
+
+# 二进制文件不参与行尾转换/归一化
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.ttf binary

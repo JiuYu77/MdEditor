@@ -1,0 +1,29 @@
+# 依赖
+node_modules/
+.npm-cache/
+
+# 构建产物
+dist/
+build/
+*.tsbuildinfo
+
+# Rust
+target/
+src-tauri/target/
+.cargo-home/
+
+# 日志
+*.log
+npm-debug.log*
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# 环境
+.env
+.env.local

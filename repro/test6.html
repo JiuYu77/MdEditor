@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>welcome page verification</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #host { width: 700px; height: 640px; border: 1px solid #ccc; position: relative; }
+    #out { padding: 8px 12px; font: 12px/1.6 monospace; white-space: pre; color: #0a0; background: #111; min-height: 100px; }
+  </style>
+</head>
+<body>
+  <div id="host"></div>
+  <div id="out"></div>
+  <script type="module">
+    import React from "react";
+    import { createRoot } from "react-dom/client";
+    import "/src/App.css";
+    import "@fortawesome/fontawesome-free/css/all.min.css";
+    import "/src/i18n.ts";
+    import { WelcomePage } from "/src/components/WelcomePage.tsx";
+
+    const log = (s) => { document.getElementById("out").textContent += s + "\n"; };
+    const clicked = [];
+    let canNewFile = true;
+    let files = [
+      "D:\\docs\\readme.md",
+      "D:\\docs\\app.js",
+      "D:\\docs\\notes.md",
+    ];
+    let folders = ["D:\\docs", "D:\\projects"];
+
+    const root = createRoot(document.getElementById("host"));
+    function renderAll() {
+      root.render(
+        React.createElement(WelcomePage, {
+          canNewFile,
+          recentFiles: files,
+          recentFolders: folders,
+          onNewFile: () => clicked.push("new"),
+          onOpenFile: () => clicked.push("openFile"),
+          onOpenFolder: () => clicked.push("openFolder"),
+          onOpenRecentFile: (p) => clicked.push("file:" + p),
+          onOpenRecentFolder: (p) => clicked.push("folder:" + p),
+          onRemoveRecentFile: (p) => { files = files.filter((x) => x !== p); clicked.push("rmFile:" + p); renderAll(); },
+          onRemoveRecentFolder: (p) => { folders = folders.filter((x) => x !== p); clicked.push("rmFolder:" + p); renderAll(); },
+        }),
+      );
+    }
+    window.__stats = () => ({
+      title: document.querySelector(".welcome-title")?.textContent,
+      subtitle: document.querySelector(".welcome-subtitle")?.textContent,
+      sections: Array.from(document.querySelectorAll(".welcome-section-title")).map((s) => s.textContent),
+      actions: Array.from(document.querySelectorAll(".welcome-action")).map((b) => ({ text: b.textContent.trim(), disabled: b.disabled })),
+      recent: Array.from(document.querySelectorAll(".welcome-recent-name")).map((n) => n.textContent.trim()),
+      paths: Array.from(document.querySelectorAll(".welcome-recent-path")).map((p) => p.textContent),
+      empty: document.querySelector(".welcome-empty")?.textContent ?? null,
+      clicked: JSON.stringify(clicked),
+    });
+    window.__clickAction = (i) => document.querySelectorAll(".welcome-action")[i].click();
+    window.__clickRecent = (i) => document.querySelectorAll(".welcome-recent-item")[i].click();
+    window.__clickRemove = (i) => document.querySelectorAll(".welcome-recent-remove")[i].click();
+    window.__removeCount = () => document.querySelectorAll(".welcome-recent-remove").length;
+    window.__setNoRecent = () => { files = []; folders = []; renderAll(); };
+    window.__setNoFolder = () => { canNewFile = false; renderAll(); };
+    window.__setManyRecent = () => {
+      files = Array.from({ length: 8 }, (_, i) => `D:\\docs\\file-${i + 1}.md`);
+      folders = ["D:\\docs", "D:\\projects", "D:\\notes"];
+      renderAll();
+    };
+    window.__setSixRecent = () => {
+      files = Array.from({ length: 4 }, (_, i) => `D:\\docs\\file-${i + 1}.md`);
+      folders = ["D:\\docs", "D:\\projects"];
+      renderAll();
+    };
+    window.__scrollMetrics = () => {
+      const el = document.querySelector(".welcome-recent-scroll");
+      return el ? { hasScroll: true, clientH: el.clientHeight, scrollH: el.scrollHeight } : { hasScroll: false };
+    };
+    renderAll();
+    log("ready");
+  </script>
+</body>
+</html>

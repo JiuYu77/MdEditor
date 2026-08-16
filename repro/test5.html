@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>filetree CRUD verification</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #host { width: 340px; height: 560px; border: 1px solid #ccc; overflow: auto; }
+    #out { padding: 8px 12px; font: 12px/1.6 monospace; white-space: pre; color: #0a0; background: #111; min-height: 100px; }
+  </style>
+</head>
+<body>
+  <div id="host"></div>
+  <div id="out"></div>
+  <script type="module">
+    import React, { useState } from "react";
+    import { createRoot } from "react-dom/client";
+    import "/src/App.css";
+    import "@fortawesome/fontawesome-free/css/all.min.css";
+    import "/src/i18n.ts";
+    import { Sidebar } from "/src/components/Sidebar.tsx";
+    import { __fsSnapshot } from "/repro/mock-core.ts";
+
+    const log = (s) => { document.getElementById("out").textContent += s + "\n"; };
+    const renamed = [];
+    const deleted = [];
+    let selected = null;
+
+    function Harness() {
+      const [panel, setPanel] = useState("explorer");
+      return React.createElement("div", null,
+        React.createElement("button", { id: "btn-switch", onClick: () => setPanel((p) => (p === "explorer" ? "outline" : "explorer")) }, "switch"),
+        React.createElement(Sidebar, {
+          panel,
+          rootDir: "/ws",
+          selected,
+          onSelect: (p) => { selected = p; log("select: " + p); },
+          useNativeTitleBar: false,
+          onToggleNativeTitleBar: () => {},
+          showLineNumbers: true,
+          onToggleShowLineNumbers: () => {},
+          language: "zh-CN",
+          onChangeLanguage: () => {},
+          startupBehavior: "welcome",
+          onStartupBehaviorChange: () => {},
+          width: 320,
+          onWidthChange: () => {},
+          outline: [],
+          activeOutlineIndex: -1,
+          onOutlineJump: () => {},
+          treeRefreshKey: 0,
+          externalReload: null,
+          onRefreshTree: () => { log("refresh clicked"); },
+          onOpenFolder: () => {},
+          onEntryRenamed: (o, n) => { renamed.push([o, n]); log(`renamed: ${o} -> ${n}`); },
+          onEntryDeleted: (p) => { deleted.push(p); log("deleted: " + p); },
+        }),
+      );
+    }
+
+    const root = createRoot(document.getElementById("host"));
+    root.render(React.createElement(Harness));
+
+    window.__title = () => document.querySelector(".sidebar-title")?.textContent ?? "";
+    window.__tree = () => {
+      const nodes = Array.from(document.querySelectorAll(".tree-node"));
+      return nodes.map((n) => ({
+        text: n.querySelector(".tree-name")?.textContent ?? "[input]",
+        selected: n.classList.contains("selected"),
+        icon: n.querySelector(".tree-icon i")?.className ?? n.querySelector(".tree-icon")?.textContent ?? "",
+      }));
+    };
+    window.__iconMap = () => {
+      const out = {};
+      document.querySelectorAll(".tree-node").forEach((n) => {
+        const name = n.querySelector(".tree-name")?.textContent;
+        const cls = n.querySelector(".tree-icon i")?.className;
+        if (name) out[name] = cls ?? "";
+      });
+      return out;
+    };
+    window.__inputs = () => Array.from(document.querySelectorAll(".tree-input")).map((i) => i.value || i.placeholder || "");
+    window.__menuItems = () => Array.from(document.querySelectorAll(".tree-menu-item")).map((b) => b.textContent);
+    window.__menuOpen = () => document.querySelectorAll(".tree-menu").length > 0;
+    window.__rightClick = (i) => {
+      const n = document.querySelectorAll(".tree-node")[i];
+      const r = n.getBoundingClientRect();
+      n.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.left + 40, clientY: r.top + 8 }));
+    };
+    window.__clickMenuItem = (i) => document.querySelectorAll(".tree-menu-item")[i].click();
+    window.__clickNode = (i) => document.querySelectorAll(".tree-node")[i].click();
+    window.__clickBlank = () => {
+      const el = document.querySelector(".file-tree");
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    };
+    window.__clickHeaderBtn = (i) => document.querySelectorAll(".sidebar-action")[i].click();
+    window.__setInput = (i, v) => {
+      const input = document.querySelectorAll(".tree-input")[i];
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+      setter.call(input, v);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    window.__pressEnter = (i) => {
+      document.querySelectorAll(".tree-input")[i].dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    };
+    window.__snapshot = () => __fsSnapshot();
+    window.__logs = () => document.getElementById("out").textContent;
+    log("ready");
+  </script>
+</body>
+</html>

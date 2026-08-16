@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>md-editor WYSIWYG repro</title>
+  <style>
+    :root {
+      --editor-bg: #ffffff; --editor-fg: #1f1f1f;
+      --border: #d4d4d4; --accent: #007acc; --hover: rgba(0,0,0,.06);
+      --table-header-bg: #e8e8e8; --table-bg: #f7f7f7;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #fafafa; font-family: system-ui, sans-serif; }
+    #editor { height: 100vh; }
+    .code-editor .cm-editor { height: 100%; font-size: 14px; }
+    .code-editor .cm-scroller { overflow: auto; font-family: system-ui, sans-serif; line-height: 1.7; }
+    .code-editor .cm-content { padding: 16px 24px; }
+    .md-hide-mark { opacity: 0; }
+    .md-heading { font-weight: 700; line-height: 1.4; }
+    .md-heading-1 { font-size: 2em; }
+    .md-heading-2 { font-size: 1.6em; }
+    .md-heading-3 { font-size: 1.35em; }
+    .md-heading-4 { font-size: 1.2em; }
+    .md-heading-5 { font-size: 1.05em; }
+    .md-heading-6 { font-size: 1em; }
+    .md-strong { font-weight: 700; }
+    .md-em { font-style: italic; }
+    .md-inline-code { background: var(--hover); border-radius: 4px; padding: 2px 5px; font-family: monospace; font-size: 0.9em; }
+    .md-bullet { color: var(--accent); font-weight: 700; display: inline-block; margin-right: 6px; }
+    .md-list-order { color: var(--accent); font-weight: 600; display: inline-block; margin-right: 6px; }
+    .md-task-checkbox { display: inline-block; width: 14px; height: 14px; border: 1.5px solid var(--border); border-radius: 3px; margin-right: 6px; vertical-align: -2px; position: relative; }
+    .md-task-checkbox.checked { border-color: var(--accent); background: var(--accent); }
+    .md-task-checkbox.checked::after { content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+    .md-table-header { font-weight: 700; background: transparent; }
+    .cm-line.md-table-divider { height: 1px; overflow: hidden; border-bottom: 1px solid var(--border); }
+    .cm-line.md-setext-underline { height: 0; overflow: hidden; }
+    .md-table-row { background: var(--table-bg); }
+    .md-table-cell { padding: 4px 16px; border-left: 1px solid var(--border); text-align: center; }
+    #report { position: fixed; left: 8px; bottom: 8px; right: 8px; max-height: 220px; overflow: auto; background: rgba(0,0,0,.82); color: #0f0; font: 11px/1.5 monospace; padding: 8px; border-radius: 6px; z-index: 999; white-space: pre; }
+  </style>
+</head>
+<body>
+  <div id="editor" class="code-editor"></div>
+  <div id="report"></div>
+  <script type="module">
+    import { EditorState, Compartment } from "@codemirror/state";
+    import { EditorView, keymap, lineNumbers, drawSelection, placeholder, ViewPlugin, Decoration } from "@codemirror/view";
+    import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+    import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+    import { syntaxTree } from "@codemirror/language";
+    import { buildWysiwygDecorations } from "/packages/md-editor/src/wysiwyg/decorations.ts";
+
+    const reportEl = document.getElementById("report");
+    const log = (msg) => { reportEl.textContent += msg + "\n"; };
+
+    class WysiwygView {
+      constructor(view) { this.decorations = buildWysiwygDecorations(view); }
+      update(u) { if (u.docChanged || u.viewportChanged) this.decorations = buildWysiwygDecorations(u.view); }
+    }
+    const wysiwygPlugin = ViewPlugin.fromClass(WysiwygView, { decorations: (v) => v.decorations });
+
+    const content = [
+      "# 大标题 Heading",
+      "普通段落文字 paragraph",
+      "- 项目一 item",
+      "- 项目二 item",
+      "1. 第一 first",
+      "2. 第二 second",
+      "- [x] 已完成任务 done",
+      "- [ ] 未完成任务 todo",
+      "",
+      "| 列A | 列B |",
+      "| --- | --- |",
+      "| 1 | 2 |",
+      "",
+      "**粗体** 与 *斜体* 与 `行内代码`",
+      "",
+      "> 引用块 quote",
+      "",
+      "```js",
+      "const a = 1;",
+      "```",
+      "",
+      "结尾行 last",
+    ].join("\n");
+
+    const state = EditorState.create({
+      doc: content,
+      extensions: [
+        history(),
+        markdown({ base: markdownLanguage }),
+        drawSelection(),
+        EditorView.lineWrapping,
+        placeholder("empty"),
+        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        wysiwygPlugin,
+        lineNumbers(),
+      ],
+    });
+    const view = new EditorView({ state, parent: document.getElementById("editor") });
+    window.__view = view;
+
+    // 诊断：高度图中的行块 vs 文档行（检查是否多行被合并成一个块）
+    window.__dumpBlocks = () => {
+      const out = [];
+      const v = view;
+      const doc = v.state.doc;
+      for (let ln = 1; ln <= doc.lines; ln++) {
+        const line = doc.line(ln);
+        let blk = null, err = "";
+        try { blk = v.lineBlockAt(line.from); } catch (e) { err = " THROW:" + e.message; }
+        if (err) { out.push(`行${ln} ${err}`); continue; }
+        const blkStart = blk.from, blkEnd = blk.to;
+        const blkLine1 = doc.lineAt(blkStart).number, blkLine2 = doc.lineAt(Math.max(blkStart, blkEnd - 1)).number;
+        const merged = blkLine2 > blkLine1;
+        const text = line.text.length > 34 ? line.text.slice(0, 34) + "…" : line.text;
+        out.push(`${merged ? "MERGED" : "ok    "} 行${String(ln).padStart(2)} [${text}] -> block(${blkStart}-${blkEnd}) 覆盖行${blkLine1}-${blkLine2} h=${Math.round(blk.height)}px`);
+      }
+      return out.join("\n");
+    };
+    window.__dumpViewport = () => {
+      const v = view;
+      return { viewport: v.viewport, visibleRanges: v.visibleRanges, contentHeight: v.contentHeight };
+    };
+    window.__dumpMap = () => {
+      const dv = view.docView;
+      return {
+        mapLength: dv.heightMap ? dv.heightMap.length : "n/a",
+        docLength: view.state.doc.length + 1,
+        hasHeightMap: !!dv.heightMap,
+      };
+    };
+    window.__dumpHTML = () => {
+      const html = view.contentDOM.innerHTML;
+      return html.length > 6000 ? html.slice(0, 6000) + "\n...[truncated " + html.length + " chars]" : html;
+    };
+    // 诊断：对每个可见行，报告 posAtCoords 是否命中预期文档行
+    window.__runDiag = () => {
+      const out = [];
+      const v = view;
+      const doc = v.state.doc;
+      for (let ln = 1; ln <= doc.lines; ln++) {
+        const line = doc.line(ln);
+        let coords = null, err = "";
+        try { coords = v.coordsAtPos(line.from); } catch (e) { err = " coordsAtPos THROW:" + e.message; }
+        if (!coords || err) { out.push(`BAD  行${String(ln).padStart(2)}${err || " (视口外)"} [${line.text.slice(0, 30)}]`); continue; }
+        const y = coords.top + 8;
+        const x = coords.left + 40;
+        let hit = null, hitLine = -1;
+        try { hit = v.posAtCoords({ x, y }, false); hitLine = hit == null ? -1 : doc.lineAt(hit).number; }
+        catch (e) { err = " posAtCoords THROW:" + e.message; }
+        const ok = !err && hitLine === line.number;
+        const text = line.text.length > 40 ? line.text.slice(0, 40) + "…" : line.text;
+        out.push(`${ok ? "OK  " : "BAD "} 行${String(line.number).padStart(2)} y=${String(Math.round(coords.top)).padStart(4)} h=${String(Math.round(coords.bottom - coords.top)).padStart(2)}px -> hit=${hit} (行${hitLine})${err} [${text}]`);
+      }
+      return out.join("\n");
+    };
+    window.__dumpMetrics = () => {
+      const v = view;
+      const doc = v.state.doc;
+      let totalDom = 0, zeroH = [];
+      v.contentDOM.querySelectorAll(".cm-line").forEach((l) => {
+        const h = l.getBoundingClientRect().height;
+        totalDom += h;
+        if (h <= 1) zeroH.push(l.textContent.slice(0, 30));
+      });
+      return {
+        docLines: doc.lines,
+        docLength: doc.length,
+        heightMapTotal: v.contentHeight,
+        domScrollHeight: v.scrollDOM.scrollHeight,
+        domLineCount: v.contentDOM.querySelectorAll(".cm-line").length,
+        totalDomHeight: Math.round(totalDom),
+        zeroHeightLines: zeroH,
+        viewportH: v.scrollDOM.clientHeight,
+      };
+    };
+    // 真实点击测试：点击第 n 行，返回光标所在文档行
+    window.__clickLine = (ln) => {
+      const v = view;
+      const doc = v.state.doc;
+      const line = doc.line(ln);
+      const coords = v.coordsAtPos(line.from);
+      if (!coords) return { error: "out of viewport" };
+      const x = Math.min(coords.left + 60, coords.right - 4);
+      const y = Math.min(coords.top + (coords.bottom - coords.top) / 2, coords.bottom - 2);
+      v.dispatch({ selection: { anchor: 0 }, scrollIntoView: false });
+      const before = v.state.selection.main.head;
+      return { x, y, before };
+    };
+    window.__selectionLine = () => {
+      const v = view;
+      const head = v.state.selection.main.head;
+      return { head, line: v.state.doc.lineAt(head).number, text: v.state.doc.lineAt(head).text };
+    };
+    window.__scrollToTop = () => { view.scrollDOM.scrollTop = 0; };
+    window.__setDoc = (text) => {
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
+      return true;
+    };
+    // dispatch 后【同步】检查：树是否完整 + 立即重建装饰看结果
+    window.__syncCheck = (text) => {
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
+      const tree = syntaxTree(view.state);
+      const nodes = [];
+      tree.iterate({ enter: (n) => { nodes.push(`${n.name} ${n.from}-${n.to}`); } });
+      const rebuilt = buildWysiwygDecorations(view);
+      const decos = [];
+      const doc = view.state.doc;
+      for (let ln = 1; ln <= doc.lines; ln++) {
+        const line = doc.line(ln);
+        rebuilt.between(line.from, line.to, (f, t, v) => {
+          decos.push(`行${ln}[${f},${t}]${v.constructor.name}`);
+        });
+      }
+      return { docLen: view.state.doc.length, treeLen: tree.length, nodes, decos };
+    };
+    window.__lineVisibility = () => {
+      const out = [];
+      const doc = view.state.doc;
+      for (let ln = 1; ln <= doc.lines; ln++) {
+        const line = doc.line(ln);
+        const domLine = view.contentDOM.querySelectorAll(".cm-line")[ln - 1];
+        if (!domLine) { out.push(`行${ln}: NO DOM`); continue; }
+        const bullet = !!domLine.querySelector(".md-bullet");
+        const order = !!domLine.querySelector(".md-list-order");
+        const checkbox = !!domLine.querySelector(".md-task-checkbox");
+        const hiddenSpans = domLine.querySelectorAll(".md-hide-mark").length;
+        const buf = domLine.querySelectorAll("img.cm-widgetBuffer").length;
+        const br = !!domLine.querySelector("br");
+        out.push(`行${ln}: text="${domLine.textContent.replace(/\n/g, "\\n")}" bullet=${bullet} order=${order} cb=${checkbox} hideMark=${hiddenSpans} widgetBuf=${buf} br=${br}`);
+      }
+      return out.join("\n");
+    };
+    window.__dumpTree = () => {
+      const out = [];
+      const tree = syntaxTree(view.state);
+      tree.iterate({ enter: (n) => { out.push(`${n.name} ${n.from}-${n.to} "${view.state.doc.sliceString(n.from, n.to).replace(/\n/g, "\\n").slice(0, 28)}"`); } });
+      return out.join("\n");
+    };
+    window.__dumpDecos = () => {
+      const out = [];
+      const doc = view.state.doc;
+      const plugin = view.plugin(wysiwygPlugin);
+      const set = plugin ? plugin.decorations : null;
+      if (!set) return "no plugin decorations";
+      for (let ln = 1; ln <= doc.lines; ln++) {
+        const line = doc.line(ln);
+        const decos = [];
+        set.between(line.from, line.to, (from, to, value) => {
+          const s = value.spec || {};
+          decos.push(`${value.constructor.name}[${from},${to}]${s.class ? " ." + s.class : ""}${s.widget ? " <widget>" : ""}`);
+        });
+        if (decos.length) out.push(`行${ln} (${line.from}-${line.to}): ${decos.join(", ")}`);
+      }
+      return out.join("\n");
+    };
+    window.__dumpDOM = () => {
+      const lines = view.contentDOM.querySelectorAll(".cm-line");
+      const arr = [];
+      lines.forEach((l, i) => arr.push(`${i}: "${l.textContent}" h=${l.getBoundingClientRect().height}`));
+      return arr.join("\n");
+    };
+    log("ready, doc lines: " + docLineCount());
+    function docLineCount() { return view.state.doc.lines; }
+  </script>
+</body>
+</html>

@@ -1,0 +1,2024 @@
+:root {
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  color-scheme: light dark;
+
+  /* 主题 CSS 变量（占位，后续由主题包覆盖，见需求文档 §3.4.5） */
+  --editor-bg: #ffffff;
+  --editor-fg: #1f1f1f;
+  --sidebar-bg: #fafafa;
+  --sidebar-fg: #1f1f1f;
+  --activity-bg: #f3f3f3;
+  --activity-fg: #8a8a8a;
+  --title-bar-bg: linear-gradient(90deg, rgb(249, 241, 239), rgb(245, 241, 249));
+  --title-bar-fg: #1f1f1f;
+  --status-bg: #007acc;
+  --status-fg: #ffffff;
+  --menu-bg: #ffffff;
+  --border: #d4d4d4;
+  --accent: #007acc;
+  --hover: rgba(0, 0, 0, 0.06);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.32);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.5);
+  --sidebar-dim: rgba(0, 0, 0, 0.45);
+  --table-header-bg: #ffffff;
+  --table-bg: #f8f9fa;
+  --table-stripe-bg: #ffffff;
+  --code-bg: rgba(0, 0, 0, 0.045);
+  /* 引用（blockquote）配色（GitHub 式：淡背景 + 灰边框，嵌套级加深） */
+  --quote-bg: #f6f8fa;
+  --quote-bg-2: #eef1f4;
+  --quote-bg-3: #e6eaf0;
+  --quote-border: #d0d7de;
+  /* 编辑光标颜色（浅色：近黑） */
+  --cursor-color: #1e1e1e;
+  /* 当前行高亮底色（设置「高亮当前行」开启时；浅色：柔和蓝灰） */
+  --active-line-bg: rgba(0, 122, 204, 0.08);
+  /* 代码高亮 token 配色（浅色，随 data-theme 切换；md-editor HighlightStyle 以 var() 引用） */
+  --hl-keyword: #708;
+  --hl-atom: #219;
+  --hl-literal: #164;
+  --hl-string: #a11;
+  --hl-regexp: #e40;
+  --hl-definition: #00f;
+  --hl-local: #30a;
+  --hl-type: #085;
+  --hl-class: #167;
+  --hl-special: #256;
+  --hl-property: #00c;
+  --hl-comment: #940;
+  --hl-invalid: #f00;
+  /* 源码模式标题颜色（浅色：玫红 217,79,138；字号分级见 mdSourceHighlightStyle） */
+  --hl-heading: #d94f8a;
+  /* 文件树区域底色（浅色下比侧边栏容器更浅：250,250,250） */
+  --filetree-bg: #fafafa;
+  /* 编辑区行号栏（浅色：灰白底深于编辑区纯白） */
+  --gutter-bg: #f3f3f3;
+  --gutter-fg: #999999;
+}
+
+/* 深色变量：手动指定（data-theme="dark"）或系统深色且未强制浅色 */
+:root[data-theme="dark"] {
+  --editor-bg: #1e1e1e;
+  --editor-fg: #d4d4d4;
+  --sidebar-bg: #252526;
+  --sidebar-fg: #cccccc;
+  --activity-bg: #333333;
+  --activity-fg: #858585;
+  --title-bar-bg: #323233;
+  --title-bar-fg: #cccccc;
+  --status-bg: #007acc;
+  --status-fg: #ffffff;
+  --menu-bg: #252526;
+  --border: #3c3c3c;
+  --accent: #0e639c;
+  --hover: rgba(255, 255, 255, 0.08);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.28);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.45);
+  --sidebar-dim: rgba(255, 255, 255, 0.45);
+  --table-header-bg: #2d2d30;
+  --table-bg: #252526;
+  --table-stripe-bg: rgba(255, 255, 255, 0.04);
+  --code-bg: rgba(255, 255, 255, 0.06);
+  /* 引用（blockquote）配色（深色：半透明白背景 + 灰紫边框，嵌套级加深） */
+  --quote-bg: rgba(255, 255, 255, 0.045);
+  --quote-bg-2: rgba(255, 255, 255, 0.07);
+  --quote-bg-3: rgba(255, 255, 255, 0.095);
+  --quote-border: #565f89;
+  --filetree-bg: #252526;
+  /* 编辑区行号栏（深色：与编辑区同底，行号灰字区分） */
+  --gutter-bg: #1e1e1e;
+  --gutter-fg: #858585;
+  /* 光标颜色（深色：亮白，暗背景下清晰） */
+  --cursor-color: #f0f0f0;
+  /* 当前行高亮底色（深色：暗蓝灰） */
+  --active-line-bg: rgba(255, 255, 255, 0.07);
+  /* 代码高亮 token 配色（深色：VS Code Dark+ 风格，亮度高对比度好） */
+  --hl-keyword: #c586c0;
+  --hl-atom: #dcdcaa;
+  --hl-literal: #ce9178;
+  --hl-string: #ce9178;
+  --hl-regexp: #d16969;
+  --hl-definition: #9cdcfe;
+  --hl-local: #9cdcfe;
+  --hl-type: #4ec9b0;
+  --hl-class: #4ec9b0;
+  --hl-special: #dcdcaa;
+  --hl-property: #9cdcfe;
+  --hl-comment: #6a9955;
+  --hl-invalid: #f44747;
+  /* 源码模式标题颜色（深色：提亮同色系玫粉，深底对比度好） */
+  --hl-heading: #f48fb1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --editor-bg: #1e1e1e;
+    --editor-fg: #d4d4d4;
+    --sidebar-bg: #252526;
+    --sidebar-fg: #cccccc;
+    --activity-bg: #333333;
+    --activity-fg: #858585;
+    --title-bar-bg: #323233;
+    --title-bar-fg: #cccccc;
+    --status-bg: #007acc;
+    --status-fg: #ffffff;
+    --menu-bg: #252526;
+    --border: #3c3c3c;
+    --accent: #0e639c;
+    --hover: rgba(255, 255, 255, 0.08);
+    --scrollbar-thumb: rgba(255, 255, 255, 0.28);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.45);
+    --sidebar-dim: rgba(255, 255, 255, 0.45);
+    --table-header-bg: #2d2d30;
+    --table-bg: #252526;
+    --table-stripe-bg: rgba(255, 255, 255, 0.04);
+    --code-bg: rgba(255, 255, 255, 0.06);
+    --quote-bg: rgba(255, 255, 255, 0.045);
+    --quote-bg-2: rgba(255, 255, 255, 0.07);
+    --quote-bg-3: rgba(255, 255, 255, 0.095);
+    --quote-border: #565f89;
+    --filetree-bg: #252526;
+    --gutter-bg: #1e1e1e;
+    --gutter-fg: #858585;
+    --cursor-color: #f0f0f0;
+    --active-line-bg: rgba(255, 255, 255, 0.07);
+    --hl-keyword: #c586c0;
+    --hl-atom: #dcdcaa;
+    --hl-literal: #ce9178;
+    --hl-string: #ce9178;
+    --hl-regexp: #d16969;
+    --hl-definition: #9cdcfe;
+    --hl-local: #9cdcfe;
+    --hl-type: #4ec9b0;
+    --hl-class: #4ec9b0;
+    --hl-special: #dcdcaa;
+    --hl-property: #9cdcfe;
+    --hl-comment: #6a9955;
+    --hl-invalid: #f44747;
+    --hl-heading: #f48fb1;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ── 滚动条（VS Code 风格：半透明、圆角、hover 变实） ── */
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 侧边栏滚动条：默认隐藏，鼠标移入侧边栏时才显示（JS class 控制，比 :hover 可靠） */
+.sidebar-body::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.sidebar-body.hovered::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  background-clip: content-box;
+}
+
+.sidebar-body.hovered::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+/* ── 整体布局：纵向（标题栏 + 主体 + 状态栏） ── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── 自绘标题栏（无边框模式，TB-03） ── */
+.titlebar {
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--title-bar-bg);
+  color: var(--title-bar-fg);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.titlebar-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px;
+  overflow: hidden;
+}
+
+.titlebar-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.titlebar-app {
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.titlebar-doc {
+  font-size: 12px;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titlebar-controls {
+  display: flex;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.tb-btn {
+  width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tb-btn i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tb-btn:hover {
+  background: var(--hover);
+}
+
+.tb-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+
+/* ── 菜单栏（自绘，Win/Linux，S-05；吃主题 CSS 变量） ── */
+.menubar {
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  background: var(--menu-bg);
+  border-bottom: 1px solid var(--border);
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+  z-index: 30;
+}
+
+.menu-root {
+  position: relative;
+  display: flex;
+}
+
+.menu-label {
+  padding: 0 12px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-fg);
+  cursor: default;
+  outline: none;
+  /* 高于遮罩层（z-40），保证菜单开着时还能悬停/点击其他菜单切换 */
+  position: relative;
+  z-index: 60;
+}
+
+.menu-label:hover,
+.menu-label.open {
+  background: var(--hover);
+}
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 230px;
+  background: var(--menu-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  z-index: 50;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 10px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-fg);
+  text-align: left;
+  border-radius: 4px;
+  cursor: default;
+  outline: none;
+}
+
+.menu-item:hover,
+.menu-item.focused {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.menu-item.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.menu-check {
+  width: 14px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 11px;
+}
+
+.menu-check i {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.menu-label-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-shortcut {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: 20px;
+  flex-shrink: 0;
+}
+
+.menu-item:hover .menu-shortcut,
+.menu-item.focused .menu-shortcut {
+  opacity: 0.85;
+}
+
+.menu-separator {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 10px;
+}
+
+/* ── 活动栏（最左侧 48px） ── */
+.activity-bar {
+  width: 48px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--activity-bg);
+  border-right: 1px solid var(--border);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.activity-item {
+  width: 46px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--activity-fg);
+  cursor: pointer;
+  padding: 0;
+}
+
+.activity-item:hover {
+  color: var(--sidebar-fg);
+}
+
+.activity-item.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--sidebar-bg);
+}
+
+.activity-item i {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.activity-settings {
+  margin-top: auto;
+}
+
+/* ── 侧边栏 ── */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-fg);
+  border-right: 1px solid var(--border);
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 10;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resize-handle:hover {
+  opacity: 0.5;
+  /* 进入延迟 0.3s：鼠标快速划过不触发，停留后才缓慢淡入 */
+  transition-delay: 0.3s;
+}
+
+.sidebar-header {
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.sidebar-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-close {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--sidebar-fg);
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.sidebar-close i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.sidebar-close:hover {
+  background: var(--hover);
+  opacity: 1;
+}
+
+/* 资源管理器头部：新建文件/文件夹图标按钮（VS Code 风格） */
+.sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.sidebar-action {
+  width: 24px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-fg);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.sidebar-action:hover {
+  background: var(--hover);
+  opacity: 1;
+}
+
+.sidebar-action i {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.sidebar-body {
+  flex: 1;
+  overflow: auto;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-path {
+  padding: 6px 12px;
+  font-size: 11px;
+  opacity: 0.7;
+  word-break: break-all;
+  border-bottom: 1px solid var(--border);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 面板内容区域（文件树/大纲树/搜索/设置等）：浅色主题下 250,250,250，
+   与侧边栏容器（243,243,243）区分；flex:1 让底色铺满面板，长内容由 sidebar-body 滚动 */
+.file-tree,
+.outline-panel,
+.panel-placeholder,
+.settings-panel {
+  background: var(--filetree-bg);
+  flex: 1;
+  min-height: 0;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding-right: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.tree-node:hover {
+  background: var(--hover);
+}
+
+.tree-node.selected {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* 行内输入框（新建/重命名） */
+.tree-input {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: var(--editor-bg);
+  color: var(--editor-fg);
+  font-size: 13px;
+  outline: none;
+}
+
+.tree-new-row {
+  cursor: default;
+}
+
+/* 文件树右键菜单 */
+.tree-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.tree-menu {
+  position: fixed;
+  min-width: 170px;
+  background: var(--menu-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  z-index: 61;
+}
+
+.tree-menu-item {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-fg);
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tree-menu-item:hover {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.tree-icon {
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* 文件树折叠三角（参考大纲 outline-caret）：文件夹显示 ▸/▾，文件占位保持缩进对齐 */
+.tree-caret {
+  flex-shrink: 0;
+  width: 14px;
+  font-size: 10px;
+  opacity: 0.75;
+  cursor: pointer;
+  text-align: center;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.tree-caret i {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.tree-caret.empty {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tree-node:hover .tree-caret,
+.tree-node.selected .tree-caret {
+  opacity: 1;
+}
+
+.tree-icon i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tree-node.selected .tree-icon {
+  opacity: 1;
+}
+
+.tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-empty,
+.panel-note {
+  padding: 12px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* 未打开文件夹时的引导 */
+.open-folder-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-top: 32px;
+}
+
+.open-folder-btn {
+  padding: 6px 16px;
+  font-size: 12px;
+  color: #ffffff;
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.open-folder-btn:hover {
+  filter: brightness(1.1);
+}
+
+.search-input {
+  width: calc(100% - 24px);
+  margin: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--editor-bg);
+  color: var(--editor-fg);
+  font-size: 12px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+/* ── 全局搜索面板（VS Code 式：选项按钮 + 分组结果） ── */
+.search-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.search-bar {
+  padding: 12px 12px 6px;
+}
+
+.search-bar .search-input {
+  width: 100%;
+  margin: 0 0 8px;
+}
+
+.search-options {
+  display: flex;
+  gap: 6px;
+}
+
+.search-opt {
+  min-width: 30px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--sidebar-fg);
+  font: 12px/1 monospace;
+  cursor: pointer;
+}
+
+.search-opt:hover {
+  border-color: var(--accent);
+}
+
+.search-opt.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.search-summary {
+  padding: 4px 14px 6px;
+  font-size: 12px;
+  color: var(--sidebar-dim);
+}
+
+.search-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.search-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 10px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-fg);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.search-group-header:hover {
+  background: var(--hover);
+}
+
+.search-group-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-group-count {
+  font-size: 11px;
+  color: var(--sidebar-dim);
+  font-weight: 400;
+}
+
+.search-result-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 10px 2px 24px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-fg);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.search-result-row:hover {
+  background: var(--hover);
+}
+
+.search-result-line {
+  color: var(--accent);
+  font-size: 11px;
+  min-width: 2.5em;
+  text-align: right;
+  user-select: none;
+}
+
+.search-result-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-hit {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ── 大纲面板（树形，可展开/折叠） ── */
+.outline-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-fg);
+  font-size: 13px;
+  text-align: left;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.outline-item:hover {
+  background: var(--hover);
+}
+
+.outline-item.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.outline-caret {
+  flex-shrink: 0;
+  width: 16px;
+  font-size: 10px;
+  opacity: 0.75;
+  cursor: pointer;
+  text-align: center;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.outline-caret i {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.outline-item.active .outline-caret {
+  opacity: 1;
+}
+
+.outline-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-l1 {
+  font-weight: 600;
+}
+
+.outline-l2 {
+  font-weight: 500;
+}
+
+/* ── 编辑区（欢迎页 / 源码编辑器 + 实时预览） ── */
+.content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+
+.welcome-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  background: var(--editor-bg);
+  color: var(--editor-fg);
+  z-index: 5;
+  /* 隐藏右侧滚动条但保留滚动能力（页面仍可滚动，视觉更干净） */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* 旧 Edge/IE */
+}
+
+.welcome-overlay::-webkit-scrollbar {
+  display: none; /* WebKit/Chromium（WebView2） */
+}
+
+/* 欢迎页（VS Code Welcome 风格：标题 + Start 区 + Recent 区） */
+.welcome {
+  max-width: 620px;
+  padding: 56px 64px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome-title {
+  font-size: 34px;
+  font-weight: 300;
+  margin: 0 0 6px;
+}
+
+.welcome-subtitle {
+  font-size: 14px;
+  opacity: 0.75;
+  margin: 0 0 36px;
+}
+
+.welcome-section {
+  margin-bottom: 28px;
+}
+
+.welcome-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  opacity: 0.7;
+  margin: 0 0 10px;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.welcome-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.welcome-action:hover {
+  background: var(--hover);
+}
+
+.welcome-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.welcome-action i {
+  width: 18px;
+  text-align: center;
+  font-size: 15px;
+  opacity: 0.8;
+}
+
+.welcome-recent-list {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+}
+
+/* 历史条目行：内容 + 右侧 × 删除按钮 */
+.welcome-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.welcome-recent-item {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.welcome-recent-row:hover .welcome-recent-item {
+  background: var(--hover);
+}
+
+.welcome-recent-remove {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.welcome-recent-row:hover .welcome-recent-remove {
+  opacity: 0.6;
+}
+
+.welcome-recent-remove:hover {
+  opacity: 1;
+  background: var(--hover);
+}
+
+/* 历史条目超过 6 条时：最近区域内部滚动（约 6 条高度） */
+.welcome-recent-scroll {
+  max-height: 282px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-right: -4px;
+}
+
+/* 滚动条：默认隐藏，鼠标移入显示（与侧边栏一致） */
+.welcome-recent-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.welcome-recent-scroll.hovered::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  background-clip: content-box;
+}
+
+.welcome-recent-scroll.hovered::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+.welcome-recent-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.welcome-recent-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.welcome-recent-name i {
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.welcome-recent-path {
+  font-size: 11px;
+  opacity: 0.55;
+  padding-left: 28px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.welcome-empty {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.editor-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.editor-pane {
+  flex: 1;
+  min-width: 0;
+  background: var(--editor-bg);
+  color: var(--editor-fg);
+}
+
+.code-editor {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Markdown 渲染通用排版 */
+.md-view {
+  line-height: 1.7;
+}
+
+.md-view h1 {
+  /* Typora 风格：标题无下划线，仅加粗 */
+  font-weight: 700;
+}
+
+.md-view code {
+  background: var(--hover);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+}
+
+.md-view pre {
+  background: var(--sidebar-bg);
+  padding: 12px;
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.md-view pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* CodeMirror 基础样式（md-editor 源码模式） */
+.code-editor .cm-editor {
+  height: 100%;
+  font-size: 16px;
+  position: relative; /* 浮动表格按钮的定位参照 */
+}
+
+/* 行号栏：跟随主题变量（不依赖 CM 默认 prefers-color-scheme，与 app 的 data-theme 一致） */
+.code-editor .cm-gutters {
+  background-color: var(--gutter-bg);
+  color: var(--gutter-fg);
+  border: none;
+  border-right: 1px solid var(--border);
+  font-size: 13px;
+}
+
+/* 当前行行号高亮（浅色/深色均用 hover 半透明底） */
+.code-editor .cm-activeLineGutter,
+.cm-editor .cm-activeLineGutter {
+  background-color: var(--hover);
+}
+
+/* 编辑光标：浅色近黑 / 深色亮白（暗背景下可见），2px 加粗提升存在感。
+   min-height 兜底：光标停在隐藏空格（font-size:0，单元格首尾空格）附近时
+   CM 计算的 caret 高度会塌缩（时大时小），固定 ≥ 文字高度（14px）保证
+   光标始终清晰可见、高度稳定 */
+.code-editor .cm-cursor,
+.cm-editor .cm-cursor {
+  border-left: 2px solid var(--cursor-color);
+  min-height: 18px;
+}
+
+/* 内容区不随内容最大宽撑开：CM6 的 .cm-scroller 是 flex column 且
+   align-items:flex-start，默认 .cm-content 宽度=内容最大宽（表格 flex 行会把它
+   撑到超出视口，导致行内单元格永不收缩、出现横向滚动）；min-width:0 让内容区
+   收缩到滚动容器宽度，表格行由 flex-shrink 自动等比收缩 */
+.cm-editor .cm-content {
+  min-width: 0;
+}
+
+/* 当前行高亮（设置「高亮当前行」开启时；覆盖 CM 内置浅蓝底，跟随主题变量）。
+   两种模式共用 --active-line-bg（浅/深各一）即可，高亮背景色是主题属性，与编辑模式无关。
+   关闭高亮时当前行无任何背景（光标行源码不再加灰底，见 .md-cursor-source）。 */
+.code-editor .cm-line.cm-activeLine,
+.cm-editor .cm-line.cm-activeLine {
+  background-color: var(--active-line-bg);
+}
+
+.code-editor .cm-scroller {
+  overflow: auto;
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  line-height: 1.7;
+}
+
+/* 内容区：Typora 式限宽居中（不占满屏幕，两侧留白）。
+   max-width 含内边距（border-box），超过时内容居中；不足时占满。
+   表格行 flex 收缩按内容区实际宽度自动适配 */
+.code-editor .cm-content {
+  padding: 16px 24px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+/* 源码模式：等宽字体 */
+.code-editor.source-mode .cm-scroller {
+  font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+  font-size: 15px;
+}
+
+/* WYSIWYG 装饰（md-editor 所见即所得模式，排版参考 Typora） */
+.md-hide-mark {
+  opacity: 0;
+}
+
+/* 光标所在行（显示 Markdown 源码）：不加底色提示（Obsidian/Typora 同款）。
+   此前用 --hover 灰底，会与「高亮当前行」的背景混淆（关闭高亮后光标行仍显灰），
+   现移除背景，光标行源码靠内容本身区分；高亮由 .cm-activeLine 单独控制 */
+.cm-line.md-cursor-source {
+  background: transparent;
+}
+
+/* 引用（blockquote）：Typora/GitHub 式左边框 + 淡背景，嵌套级（>>）加深背景。
+   行装饰整行生效（含行内换行的续行），> 标记已由 QuoteMark 装饰移除 */
+.cm-line.md-quote {
+  background: var(--quote-bg);
+  border-left: 3px solid var(--quote-border);
+  padding-left: 8px;
+}
+
+.cm-line.md-quote-2 {
+  background: var(--quote-bg-2);
+}
+
+.cm-line.md-quote-3 {
+  background: var(--quote-bg-3);
+}
+
+/* 光标所在标题行：左侧浮动级别提示（H1~H6，Typora/飞书式）
+   绝对定位于标题左上方，不占文档流、不把标题向右撑开 */
+.cm-line.md-heading-cursor {
+  position: relative;
+}
+
+.cm-line.md-heading-cursor::before {
+  position: absolute;
+  top: 0;
+  left: -14px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  opacity: 0.45;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.cm-line.md-heading-cursor-1::before { content: "H1"; }
+.cm-line.md-heading-cursor-2::before { content: "H2"; }
+.cm-line.md-heading-cursor-3::before { content: "H3"; }
+.cm-line.md-heading-cursor-4::before { content: "H4"; }
+.cm-line.md-heading-cursor-5::before { content: "H5"; }
+.cm-line.md-heading-cursor-6::before { content: "H6"; }
+
+.md-heading {
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.md-heading-1 {
+  font-size: 2em;
+}
+
+.md-heading-2 {
+  font-size: 1.6em;
+}
+
+.md-heading-3 {
+  font-size: 1.35em;
+}
+
+.md-heading-4 {
+  font-size: 1.2em;
+}
+
+.md-heading-5 {
+  font-size: 1.05em;
+}
+
+.md-heading-6 {
+  font-size: 1em;
+}
+
+.md-strong {
+  font-weight: 700;
+}
+
+.md-em {
+  font-style: italic;
+}
+
+.md-inline-code {
+  background: var(--hover);
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+}
+
+/* 链接渲染（[text](url)：隐藏标记，文字显示为可点击链接） */
+.md-link {
+  position: relative;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* 悬停显示链接源码（[text](url)，Typora 式提示）；pointer-events:none 不阻挡点击 */
+.md-link:hover::after {
+  content: attr(data-source);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  background: var(--menu-bg);
+  color: var(--editor-fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 图片渲染（![alt](url)：整段替换为 <img>；加载失败显示 [alt] 提示） */
+.md-image-wrap {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: bottom;
+}
+
+.md-image {
+  display: block;
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+.md-image-error {
+  color: var(--editor-fg);
+  opacity: 0.55;
+  font-size: 0.95em;
+  padding: 2px 0;
+}
+
+/* ── 代码围栏块（Typora 风格容器：背景 + 圆角 + 块内行号） ── */
+.cm-line.md-code-block {
+  background: var(--code-bg);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+  padding-left: 12px;
+  position: relative;
+}
+
+.cm-line.md-code-block-start {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.cm-line.md-code-block-end {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* 闭合围栏行（```）：完全移除标记后折叠为 0 高，不占空行 */
+.cm-line.md-code-close {
+  height: 0;
+  overflow: hidden;
+}
+
+/* 行号栏元素：overflow hidden —— 折叠行（代码块闭合 ```）为 0 高时，
+   对应行号数字被裁剪，避免与下一行行号重叠（如 56 与 57 叠在一起） */
+.code-editor .cm-gutterElement,
+.cm-editor .cm-gutterElement {
+  overflow: hidden;
+}
+
+/* 代码块闭合 ``` 行：行号隐藏且不占位（内容已折叠为 0 高，行号栏同步去掉该行，
+   否则行号 56/57 重叠错位）。类由 gutterLineClass（md-editor）注入 */
+.code-editor .cm-gutterElement.md-gutter-close,
+.cm-editor .cm-gutterElement.md-gutter-close {
+  display: none;
+}
+
+/* 块内行号：CSS 计数器，每个代码块首内容行重置 */
+.cm-line.md-code-line {
+  counter-increment: code-line;
+}
+
+.cm-line.md-code-line-first {
+  counter-reset: code-line;
+}
+
+.cm-line.md-code-line::before {
+  content: counter(code-line);
+  display: inline-block;
+  width: 26px;
+  text-align: right;
+  margin-right: 10px;
+  opacity: 0.45;
+  font-size: 0.85em;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 代码块工具栏（围栏首行）：折叠 + 语言 + 复制 */
+.md-code-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.md-code-fold,
+.md-code-lang {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.md-code-fold:hover,
+.md-code-lang:hover {
+  background: var(--hover);
+  opacity: 1;
+}
+
+.md-code-lang {
+  font-family: system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+/* 复制按钮：绝对定位在代码块右上角 */
+.md-code-copy {
+  position: absolute;
+  right: 6px;
+  top: 3px;
+  border: none;
+  background: var(--hover);
+  color: inherit;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.md-code-toolbar:hover .md-code-copy,
+.md-code-copy:hover {
+  opacity: 1;
+}
+
+/* 语言选择弹层 */
+.md-code-lang-picker {
+  position: fixed;
+  z-index: 100;
+  min-width: 140px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--menu-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+}
+
+/* 弹层顶部：手动输入任意语言（回车应用，Esc 关闭） */
+.md-code-lang-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--editor-bg);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  outline: none;
+}
+
+.md-code-lang-input:focus {
+  border-color: var(--accent);
+}
+
+.md-code-lang-item {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-fg);
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.md-code-lang-item:hover,
+.md-code-lang-item.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* 折叠占位 */
+.cm-foldPlaceholder {
+  background: var(--hover);
+  border-radius: 4px;
+  padding: 0 8px;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+/* 任务列表：已勾选内容灰色（不加删除线） */
+.md-task-done {
+  opacity: 0.55;
+}
+
+.md-bullet {
+  color: var(--accent);
+  font-weight: 700;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.md-list-order {
+  color: var(--accent);
+  font-weight: 600;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* 任务列表复选框（Obsidian/Notion 式：圆角方框 + hover 反馈 + 平滑过渡 + 居中对勾） */
+.md-task-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  margin-right: 6px;
+  vertical-align: -3px;
+  position: relative;
+  box-sizing: border-box;
+  cursor: pointer;
+  background: var(--editor-bg);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.md-task-checkbox:hover {
+  border-color: var(--accent);
+}
+
+.md-task-checkbox:active {
+  transform: scale(0.92);
+}
+
+.md-task-checkbox.checked {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 122, 204, 0.35);
+}
+
+/* 对勾：flex 居中 + 旋转边框，视觉微调上移 */
+.md-task-checkbox.checked::after {
+  content: "";
+  width: 5px;
+  height: 9px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+/* 表格（Obsidian/Typora/飞书式：表头浅底 + 数据行斑马纹 + 对齐竖线 + 细线分隔） */
+.md-table-header {
+  background: var(--table-header-bg);
+}
+
+/* 表头单元格加粗（放单元格上而非整行，保证行内空格字重一致、列间隙宽度一致） */
+.md-table-header-cell {
+  font-weight: 700;
+}
+
+/* 表格分隔行（| --- | --- |）：折叠为 1px 细线，不占空行高度 */
+.cm-line.md-table-divider {
+  height: 1px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Setext 标题下划线行（= / -）：折叠为 0 高，不占空行 */
+.cm-line.md-setext-underline {
+  height: 0;
+  overflow: hidden;
+}
+
+/* 数据行基础底（浅色 248,249,250 / 深色 #252526，与斑马纹行交替） */
+.md-table-row {
+  background: var(--table-bg);
+}
+
+/* 相邻行交替底色（飞书/Notion 式斑马纹，柔和） */
+.md-table-row-stripe {
+  background: var(--table-stripe-bg);
+}
+
+/* 表格行用 flex 布局：单元格按列宽（flex-basis）排布，页面宽度不足时
+   自动等比收缩（flex-shrink，每列最小 48px），内容超宽在单元格内换行——
+   不再依赖 JS 测量容器宽度（避免布局未稳定/滚动条出现导致的时序误差），
+   单元格也永远不会被换行挤到下一行。 */
+.cm-line.md-table-header,
+.cm-line.md-table-row {
+  display: flex;
+  align-items: stretch;
+  white-space: nowrap;
+}
+
+/* 单元格：block 布局（flex 容器内"文本末尾"位置的 coordsAtPos 会回退到单元格
+   右缘，block 下正常）；内部文本由 .md-cell-text（flex + height:100%）垂直居中。
+   box-sizing:border-box 使 width 含内边距；仅内部列有竖线（首列无左边框、
+   末列无右边框，最外两侧竖线去除）；white-space:pre-wrap 保留用户输入的空格
+   （如 " 的的  "）不折叠，使 DOM 渲染宽度与列宽测量一致；
+   word-break:break-word 让超长内容断词换行 */
+.md-table-cell {
+  flex: 0 1 auto;
+  min-width: 48px;
+  box-sizing: border-box;
+  display: block;
+  /* 上下 8px（Typora 式行高：表格行高 = 文字行高(line-height 1.7) + 上下 padding） */
+  padding: 8px 16px;
+  text-align: center;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 单元格全文文本包装（table.ts 的 md-cell-text mark）：
+   flex 垂直居中于单元格高度（单元格高 = 行高），水平对齐由列对齐类控制 */
+.md-cell-text {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 0;
+}
+
+/* 原子管道占位（空 span）与 widgetBuffer：block 布局下 inline 占位即使 0 高
+   也会形成行盒把文本推下；absolute 使其脱离流（不推文本、不破坏 CM 的
+   光标坐标映射——display:none 会导致管道位置光标回退异常） */
+.md-table-cell {
+  position: relative;
+}
+
+.md-table-cell span:empty,
+.md-table-cell img.cm-widgetBuffer {
+  position: absolute;
+  font-size: 0;
+  line-height: 0;
+}
+
+/* 内部竖线（第 2 列起，由 table.ts 加 md-table-cell-brd 类）：
+   行首列无左边框，表最左侧无竖线；末列无右边框，表最右侧无竖线 */
+.md-table-cell-brd {
+  border-left: 1px solid var(--border);
+}
+
+/* 单元格首尾空格：渲染 0 宽隐藏（mark 仍在 DOM，光标可停靠、输入不漂移），
+   文档内容不变、保存原样保留 */
+.md-hide-cell-space {
+  font-size: 0;
+}
+
+/* 列对齐（跟随分隔行冒号：GFM 规范）：
+   justify-content 控制 .md-cell-text 内文本块水平位置，
+   text-align 控制多行文本逐行对齐 */
+.md-table-align-l .md-cell-text {
+  justify-content: flex-start;
+}
+.md-table-align-l {
+  text-align: left;
+}
+
+.md-table-align-c .md-cell-text {
+  justify-content: center;
+}
+.md-table-align-c {
+  text-align: center;
+}
+
+.md-table-align-r .md-cell-text {
+  justify-content: flex-end;
+}
+.md-table-align-r {
+  text-align: right;
+}
+
+/* 表格操作工具条（Typora 式）：对齐快捷按钮 + 更多菜单，悬浮于表格首行上方，
+   滚动时跟随表格；绝对定位不占文档流、不改变表格渲染样式 */
+.md-table-toolbar {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  background: var(--menu-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  z-index: 30;
+}
+
+.md-table-toolbar-btn {
+  width: 24px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 11px;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.md-table-toolbar-btn:hover {
+  background: var(--hover);
+}
+
+/* 对齐激活态：当前列的对齐方式高亮 */
+.md-table-toolbar-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.md-table-toolbar-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  margin: 0 3px;
+}
+
+/* 表格操作菜单（弹出，参考语言弹层） */
+.md-table-menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 140px;
+  background: var(--menu-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+}
+
+.md-table-menu-item {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--editor-fg);
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.md-table-menu-item:hover:not(:disabled) {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.md-table-menu-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.md-table-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+/* ── 状态栏 ── */
+.status-bar {
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  background: var(--status-bg);
+  color: var(--status-fg);
+  font-size: 12px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.status-left {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 状态栏左侧按钮：隐藏/显示 活动栏与侧边栏 */
+.status-toggle-left {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+.status-toggle-left:hover {
+  background: rgba(255, 255, 255, 0.16);
+  text-decoration: none;
+}
+
+.status-right {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.status-item {
+  opacity: 0.9;
+}
+
+/* ── 设置面板 ── */
+.settings-panel {
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.settings-group {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-group:last-child {
+  border-bottom: none;
+}
+
+.settings-group-title {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  opacity: 0.7;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+/* 同组设置项之间保持间隔（行-行、说明-行相邻时留 12px） */
+.settings-row + .settings-row,
+.settings-desc + .settings-row {
+  margin-top: 12px;
+}
+
+.settings-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.settings-desc {
+  margin: 8px 0 0;
+  font-size: 11px;
+  opacity: 0.65;
+  line-height: 1.5;
+}
+
+.settings-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--editor-bg);
+  color: var(--editor-fg);
+  font-size: 12px;
+  outline: none;
+}
+
+.settings-select:focus {
+  border-color: var(--accent);
+}
+
+.status-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.9;
+}
+
+.status-btn:hover {
+  opacity: 1;
+  text-decoration: underline;
+}

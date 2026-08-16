@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>fix verification: fences / heading / table header</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #editor { height: 70vh; border-bottom: 1px solid #ccc; }
+    #editor .cm-editor { height: 100%; font-size: 14px; }
+    #editor .cm-scroller { overflow: auto; line-height: 1.7; }
+    #editor .cm-content { padding: 8px 16px; }
+    #out { padding: 8px 12px; font: 12px/1.6 monospace; white-space: pre; color: #0a0; background: #111; min-height: 80px; }
+  </style>
+</head>
+<body>
+  <div id="editor" class="code-editor"></div>
+  <div id="out"></div>
+  <script type="module">
+    import "/src/App.css";
+    import "@fortawesome/fontawesome-free/css/all.min.css";
+    import { createEditor } from "/packages/md-editor/src/index.ts";
+
+    const log = (s) => { document.getElementById("out").textContent += s + "\n"; };
+    window.addEventListener("error", (e) => log("[error] " + e.message));
+    const ed = createEditor(document.getElementById("editor"), { mode: "wysiwyg", lineNumbers: true });
+    window.__ed = ed;
+
+    window.__setValue = (t) => ed.setValue(t);
+    window.__value = () => ed.getValue();
+
+    /** 每行渲染详情：文本/类/计算样式 textDecorationLine/行高 */
+    window.__lines = () =>
+      Array.from(document.querySelectorAll("#editor .cm-line")).map((l) => {
+        const heading = l.querySelector(".md-heading");
+        const cell = l.querySelector(".md-table-cell");
+        const decoOf = (el) => (el ? getComputedStyle(el).textDecorationLine : null);
+        return {
+          text: l.textContent.slice(0, 30),
+          cls: l.className.replace("cm-line", "").trim(),
+          deco: decoOf(l),
+          headingDeco: decoOf(heading),
+          cellDeco: decoOf(cell),
+          h: l.getBoundingClientRect().height,
+        };
+      });
+
+    /** 渲染文本中是否还有 ``` 反引号围栏 */
+    window.__backticksVisible = () => {
+      const lines = Array.from(document.querySelectorAll("#editor .cm-line"));
+      return lines
+        .map((l, i) => ({ i, text: l.textContent }))
+        .filter((x) => x.text.includes("```"));
+    };
+
+    /** 代码高亮 token 数（ͼ 类） */
+    window.__hlCount = () => {
+      let n = 0;
+      document.querySelectorAll("#editor .cm-line span").forEach((s) => {
+        if (s.className && /^ͼ/.test(s.className)) n++;
+      });
+      return n;
+    };
+
+    /** 标题 span 的 text-decoration */
+    window.__headingUnderlines = () => {
+      const out = [];
+      document.querySelectorAll("#editor .cm-line .md-heading").forEach((s) => {
+        out.push({ text: s.textContent.slice(0, 16), deco: getComputedStyle(s).textDecorationLine, cls: s.className });
+      });
+      return out;
+    };
+
+    /** 表格第一行（md-table-header 行）内所有 span 的 text-decoration */
+    window.__tableHeaderDecos = () => {
+      const row = Array.from(document.querySelectorAll("#editor .cm-line")).find((l) => l.classList.contains("md-table-header"));
+      if (!row) return null;
+      return Array.from(row.querySelectorAll("span")).map((s) => ({
+        text: s.textContent.slice(0, 10),
+        deco: getComputedStyle(s).textDecorationLine,
+        cls: s.className,
+      }));
+    };
+
+    window.__logs = () => document.getElementById("out").textContent;
+
+    /** 打开第 i 个语言按钮的弹层 */
+    window.__openPicker = (i) => {
+      const btns = document.querySelectorAll(".md-code-lang");
+      if (!btns[i]) return false;
+      btns[i].click();
+      return true;
+    };
+    /** 弹层输入框输入文字并回车应用 */
+    window.__typeLang = (text) => {
+      const inp = document.querySelector(".md-code-lang-input");
+      if (!inp) return false;
+      inp.value = text;
+      inp.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      return true;
+    };
+    /** 点击弹层第 i 个预设项 */
+    window.__clickLangItem = (i) => {
+      const items = document.querySelectorAll(".md-code-lang-item");
+      if (!items[i]) return false;
+      items[i].click();
+      return true;
+    };
+    window.__pickerOpen = () => !!document.querySelector(".md-code-lang-picker");
+    window.__pickerInputValue = () => {
+      const inp = document.querySelector(".md-code-lang-input");
+      return inp ? inp.value : null;
+    };
+    log("ready");
+  </script>
+</body>
+</html>

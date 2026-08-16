@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>external change detection verification</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #host { width: 340px; height: 560px; border: 1px solid #ccc; overflow: auto; }
+    #out { padding: 8px 12px; font: 12px/1.6 monospace; white-space: pre; color: #0a0; background: #111; min-height: 100px; }
+  </style>
+</head>
+<body>
+  <div id="host"></div>
+  <div id="out"></div>
+  <script type="module">
+    import React, { useState } from "react";
+    import { createRoot } from "react-dom/client";
+    import "/src/App.css";
+    import "@fortawesome/fontawesome-free/css/all.min.css";
+    import "/src/i18n.ts";
+    import { Sidebar } from "/src/components/Sidebar.tsx";
+    import { __setDir } from "/repro/mock-core.ts";
+
+    const log = (s) => { document.getElementById("out").textContent += s + "\n"; };
+    let refreshCount = 0;
+
+    function Harness() {
+      const [panel, setPanel] = useState("explorer");
+      const [externalReload, setExternalReload] = useState(null);
+      return React.createElement("div", null,
+        React.createElement("button", { id: "btn-switch", onClick: () => setPanel((p) => (p === "explorer" ? "outline" : "explorer")) }, "switch"),
+        React.createElement(Sidebar, {
+          panel,
+          rootDir: "/ws",
+          selected: null,
+          onSelect: () => {},
+          useNativeTitleBar: false,
+          onToggleNativeTitleBar: () => {},
+          showLineNumbers: true,
+          onToggleShowLineNumbers: () => {},
+          language: "zh-CN",
+          onChangeLanguage: () => {},
+          startupBehavior: "welcome",
+          onStartupBehaviorChange: () => {},
+          width: 320,
+          onWidthChange: () => {},
+          outline: [],
+          activeOutlineIndex: -1,
+          onOutlineJump: () => {},
+          treeRefreshKey: 0,
+          externalReload,
+          onRefreshTree: () => {
+            refreshCount++;
+            log("refresh clicked");
+            setExternalReload((r) => ({ path: "*", version: (r?.version ?? 0) + 1 }));
+          },
+          onOpenFolder: () => {},
+          onEntryRenamed: () => {},
+          onEntryDeleted: () => {},
+        }),
+      );
+    }
+
+    const root = createRoot(document.getElementById("host"));
+    root.render(React.createElement(Harness));
+
+    window.__setDir = __setDir;
+
+    window.__headerTitle = () => document.querySelector(".sidebar-title")?.textContent ?? "";
+    window.__hasClose = () => !!document.querySelector(".sidebar-close");
+    window.__refreshBtn = () => {
+      const btn = Array.from(document.querySelectorAll(".sidebar-action")).find((b) => b.querySelector(".fa-arrows-rotate"));
+      return btn ? { title: btn.title, exists: true } : { exists: false };
+    };
+    window.__clickRefresh = () => {
+      const btn = Array.from(document.querySelectorAll(".sidebar-action")).find((b) => b.querySelector(".fa-arrows-rotate"));
+      if (btn) btn.click();
+      return !!btn;
+    };
+    window.__treeNames = () => Array.from(document.querySelectorAll(".tree-node .tree-name")).map((n) => n.textContent);
+    window.__expandDir = (name) => {
+      const node = Array.from(document.querySelectorAll(".tree-node")).find((n) => n.querySelector(".tree-name")?.textContent === name);
+      const caret = node?.querySelector(".tree-caret, .tree-icon");
+      if (node) node.click();
+      return !!node;
+    };
+    window.__refreshCount = () => refreshCount;
+    log("ready");
+  </script>
+</body>
+</html>

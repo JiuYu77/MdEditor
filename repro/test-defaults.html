@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>defaults test</title>
+  <style>
+    #editor { height: 400px; }
+    #editor .cm-editor { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="editor" class="code-editor"></div>
+  <script type="module">
+    import "/src/App.css";
+    import { createEditor } from "/packages/md-editor/src/index.ts";
+    const ed = createEditor(document.getElementById("editor"), { mode: "wysiwyg" });
+    window.__ed = ed;
+    window.__ed.setValue("line one\nline two\nline three");
+  </script>
+</body>
+</html>
