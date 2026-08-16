@@ -6,6 +6,14 @@
 
 ---
 
+## 📸 截图
+
+<img src="docs/img/start.jpg" alt="欢迎页" width="720"/>
+
+<img src="docs/img/start-sidebar.jpg" alt="欢迎页（带侧边栏）" width="720"/>
+
+---
+
 ## ✨ 功能特性
 
 ### 编辑器核心（Typora 式写作体验）
@@ -71,7 +79,8 @@ MdEditor/
 │           ├── index.ts    # createEditor 实例 API
 │           └── wysiwyg/    # WYSIWYG 装饰/表格/代码块/剪贴板/弹层等
 ├── docs/
-│   └── 需求说明书.md       # 产品需求文档（PRD v1.15）
+│   ├── 需求说明书.md       # 产品需求文档（PRD v1.15）
+│   └── img/                # README 截图
 ├── repro/                  # 无头回归测试（puppeteer + vite）
 └── design/                 # 应用图标设计源文件（SVG/PNG）
 ```
@@ -147,7 +156,7 @@ $env:REPRO_URL="http://localhost:5174/repro/app-test.html"; node repro/test35.mj
 
 ## 📦 应用图标
 
-图标由 `design/icon.svg` 设计生成（蓝渐变圆角方块 + 白色 **Md** + 暖黄编辑光标），通过 `npx tauri icon design/icon-1024.png` 生成全套（`src-tauri/icons/`）。
+图标由 `design/icon.svg` 设计生成（蓝渐变圆角方块 + 白色几何 **M** 标记，极简风格），通过 `npx tauri icon design/icon-1024.png` 生成全套（`src-tauri/icons/`）。
 
 ## 📝 License
 
