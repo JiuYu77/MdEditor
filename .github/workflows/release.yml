@@ -2,8 +2,9 @@
 # 触发方式：
 #   1) 推送形如 v0.1.0 的 git tag（推荐）：git tag v0.1.0 && git push origin v0.1.0
 #   2) 在 Actions 页面手动运行（workflow_dispatch）
-# 产物：GitHub 自动创建一个 Draft Release；安装包统一重命名为
-#   MdEditor-<系统>-<架构>-<版本>.<ext> 后上传。
+# 结构：create-release 作业先创建 Draft Release（只创建一次，避免多 job 并发创建
+#   撞 GitHub API 503/限流）；publish-tauri 作业 needs 它，构建 + 重命名
+#   （MdEditor-<系统>-<架构>-v<版本>.<ext>）+ 只上传不创建。
 # macOS 额外处理：DMG 卷图标设置为软件图标（hdiutil + SetFile 后处理）。
 name: release
 
@@ -14,7 +15,31 @@ on:
   workflow_dispatch:
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 计算版本与 tag
+        id: version
+        run: node -e "const v=require('./src-tauri/tauri.conf.json').version;require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'tag=v'+v+'\nversion='+v+'\n')"
+      # 只创建 Draft Release（不传 files；若已存在则 no-op 成功）
+      # 若此处撞 503：等 30-60 分钟（同 tag 反复删建会被 GitHub 限流），
+      # 或在网页手动建好草稿后直接重跑（存在则跳过创建）
+      - name: 创建 Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "MdEditor ${{ steps.version.outputs.version }}"
+          body: "请见下方附件下载对应平台的安装包。"
+          draft: true
+          prerelease: false
+
   publish-tauri:
+    needs: create-release
     permissions:
       contents: write
     strategy:
@@ -83,9 +108,7 @@ jobs:
         id: version
         run: node -e "const v=require('./src-tauri/tauri.conf.json').version;require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'tag=v'+v+'\nversion='+v+'\n')"
 
-      # 直接用 CLI 构建，不用 tauri-action 上传：
-      # 实测 uploadReleaseAssets: false 无效（tauri-action 仍会上传旧命名资产，
-      # 导致 Release 里新旧两套文件并存）；构建后统一重命名 + softprops 上传
+      # 直接用 CLI 构建（不用 tauri-action：其上传开关不可靠，曾导致 Release 新旧资产并存）
       - name: 构建安装包
         run: npm run tauri build -- ${{ matrix.args }}
 
@@ -143,13 +166,9 @@ jobs:
               ;;
           esac
 
-      # 统一上传（release 由 softprops 创建，多 job 并发时先到先建、其余追加资产）
+      # 只上传不创建（release 已由 create-release 作业建好）
       - name: 上传安装包到 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: "MdEditor ${{ steps.version.outputs.version }}"
-          body: "请见下方附件下载对应平台的安装包。"
-          draft: true
-          prerelease: false
+          tag_name: ${{ needs.create-release.outputs.tag }}
           files: ${{ matrix.upload_files }}
