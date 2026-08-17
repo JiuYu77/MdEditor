@@ -669,5 +669,5 @@ export function createEditor(el: HTMLElement, options: EditorOptions = {}): Edit
   };
 }
 
-// 图片 URL 解析器（框架无关纯函数，供宿主注入/复用，见 ./wysiwyg/widgets.ts）
-export { assetImageUrlResolver } from "./wysiwyg/widgets";
+// 图片/链接 URL 解析器（框架无关纯函数，供宿主注入/复用，见 ./wysiwyg/widgets.ts）
+export { assetImageUrlResolver, normalizeLocalPath } from "./wysiwyg/widgets";

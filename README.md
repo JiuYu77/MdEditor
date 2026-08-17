@@ -22,7 +22,7 @@
 - **GFM 语法**：标题 H1–H6 / 粗体 / 斜体 / 删除线 / 行内代码 / 列表 / 任务列表 / 表格 / 引用 / 分割线 / 图片 / 链接 / 代码块
 - **表格（进阶）**：Typora 式工具条（对齐快捷按钮 + 插入/删除行列 + 复制/删除表格）、列宽按内容自适应与窄屏压缩换行、首尾空格渲染隐藏、单元格点击确定性定位
 - **代码块**：多语言高亮、折叠、语言切换弹层、一键复制、闭合行行号隐藏
-- **链接**：渲染 + 点击浏览器打开 + 悬停显示源码
+- **链接**：渲染 + 悬停显示源码；`http(s)` 用浏览器打开，本地 `.md/.markdown/.txt` 链接在编辑器内打开（Typora 式，支持 `..\` 相对路径），其他本地文件交给系统默认应用
 - **图片**：本地/相对路径（Tauri asset 协议）、加载失败显示 `[alt]` 占位
 - **查找/替换**：`Ctrl+F` 编辑器内查找（区分大小写 / 正则 / 整个单词）、`Ctrl+Shift+F` 全局搜索、`Ctrl+H` 替换
 - **编辑体验**：列表回车续行、任务复选框点击切换、光标行源码显示、当前行高亮（按模式独立设置）
@@ -113,7 +113,7 @@ npm run tauri build    # 打包安装包（产物在 src-tauri/target/release/bu
 - **macOS**：DMG + .app（需在 macOS 上构建）
 - **Linux**：AppImage / deb / rpm
 
-> macOS 安装包只能在 macOS 上打包（Tauri 不支持 Windows → macOS 交叉编译）；可用 GitHub Actions macOS runner 自动构建（按需创建 `.github/workflows/release.yml`，参考 `tauri-action`）。
+> macOS 安装包只能在 macOS 上打包（Tauri 不支持 Windows → macOS 交叉编译）。已配置 GitHub Actions 三平台自动打包（`.github/workflows/release.yml`）：推送 `v*` 标签即触发，自动生成 Draft Release 并附上 Windows / macOS / Linux 安装包。
 
 ### 测试
 

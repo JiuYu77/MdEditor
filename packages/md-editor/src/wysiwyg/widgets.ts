@@ -87,17 +87,48 @@ export class LinkWidget extends WidgetType {
 /* ── 图片 URL 解析（宿主注入：本地/相对路径 → 可加载 URL，如 Tauri asset 协议） ── */
 
 /**
+ * 归一化本地路径：解析 `.` 与 `..` 段（支持 Windows 盘符 / UNC / 斜杠根），返回绝对路径。
+ * 例：`D:\a\b\..\c.png` → `D:\a\c.png`；`..` 不会越出根（盘符根/UNC 根之上则忽略）。
+ */
+export function normalizeLocalPath(p: string): string {
+  let prefix = "";
+  let rest = p;
+  const drive = /^([a-zA-Z]:[\\/])/.exec(p);
+  if (drive) {
+    prefix = drive[1];
+    rest = p.slice(drive[1].length);
+  } else if (p.startsWith("\\\\")) {
+    prefix = "\\\\";
+    rest = p.slice(2);
+  } else if (p.startsWith("/")) {
+    prefix = "/";
+    rest = p.slice(1);
+  }
+  const sep = p.includes("\\") ? "\\" : "/";
+  const parts: string[] = [];
+  for (const seg of rest.split(/[\\/]+/)) {
+    if (seg === "" || seg === ".") continue;
+    if (seg === "..") {
+      if (parts.length > 0) parts.pop(); // 不越出根
+      continue;
+    }
+    parts.push(seg);
+  }
+  return prefix + parts.join(sep);
+}
+
+/**
  * 默认图片 URL 解析（框架无关纯函数，可独立用于任何 Web 环境）：
  * - 外链 http(s) / data / asset / file / blob：原样返回
  * - 本地绝对路径（盘符/UNC/斜杠开头）：原样返回
- * - 相对路径：若提供 baseDir（当前文档目录），纯字符串拼为绝对路径；否则原样
+ * - 相对路径：若提供 baseDir（当前文档目录），纯字符串拼为绝对路径（归一化 `..`）并返回；否则原样
  * 宿主（如 Tauri 壳）可用 setImageUrlResolver 覆盖为 asset 协议版本。
  */
 export function defaultImageUrlResolver(raw: string, baseDir?: string | null): string {
   if (/^(https?:|data:|asset:|file:|blob:)/i.test(raw)) return raw;
   if (baseDir && !/^([a-zA-Z]:[\\/]|\\\\|[\\/])/.test(raw)) {
     const sep = baseDir.includes("\\") ? "\\" : "/";
-    return baseDir.replace(/[\\/]+$/, "") + sep + raw;
+    return normalizeLocalPath(baseDir.replace(/[\\/]+$/, "") + sep + raw);
   }
   return raw;
 }
@@ -110,6 +141,7 @@ export function defaultImageUrlResolver(raw: string, baseDir?: string | null): s
  * - 外链 http(s) / data / asset / file / blob：原样返回
  * - 本地绝对路径（盘符/UNC/斜杠开头）：→ asset URL
  * - 相对路径 + baseDir：先拼绝对再转 asset URL；无 baseDir 时原样返回
+ * 拼出的路径会先归一化 `.`/`..` 段（Tauri asset 协议拒绝含 `..` 的路径，防目录穿越）。
  */
 export function assetImageUrlResolver(raw: string, baseDir?: string | null): string {
   if (/^(https?:|data:|asset:|file:|blob:)/i.test(raw)) return raw;
@@ -119,6 +151,7 @@ export function assetImageUrlResolver(raw: string, baseDir?: string | null): str
     const sep = baseDir.includes("\\") ? "\\" : "/";
     abs = baseDir.replace(/[\\/]+$/, "") + sep + raw;
   }
+  abs = normalizeLocalPath(abs);
   // 整体编码（反斜杠 → %5C、盘符冒号 → %3A、中文 → %XX），与 Tauri convertFileSrc 一致
   return "http://asset.localhost/" + encodeURIComponent(abs);
 }

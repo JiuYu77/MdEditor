@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openDialog, save as saveDialog, ask, message } from "@tauri-apps/plugin-dialog";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openUrl, openPath as openWithDefaultApp } from "@tauri-apps/plugin-opener";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { createEditor, assetImageUrlResolver, type EditorInstance, type EditorMode, type OutlineItem } from "@mdeditor/md-editor";
+import { createEditor, assetImageUrlResolver, normalizeLocalPath, type EditorInstance, type EditorMode, type OutlineItem } from "@mdeditor/md-editor";
 import { normalizeTables } from "./normalizeTables";
 import { ActivityBar, type PanelId } from "./components/ActivityBar";
 import { Sidebar } from "./components/Sidebar";
@@ -150,6 +150,8 @@ function App() {
   useEffect(() => {
     currentDirRef.current = selected && !isUntitledPath(selected) ? dirname(selected) : null;
   }, [selected]);
+  /** 链接点击去重时间戳（编辑器 mousedown + click 双触发 openLink 回调） */
+  const lastLinkClickRef = useRef(0);
   /** 左侧区域（活动栏 + 侧边栏）是否可见（状态栏按钮切换） */
   const [leftVisible, setLeftVisible] = useState(true);
   /** 文件树外部刷新信号（{path, version}；path="*" 刷新全部展开目录） */
@@ -399,9 +401,34 @@ function App() {
         setCursor((prev) => (prev && prev.line === line && prev.col === col ? prev : { line, col }));
       });
     });
-    // 点击渲染后的链接 → 系统默认程序/浏览器打开
+    // 点击渲染后的链接（Typora 式）：
+    //   http(s)/mailto 等远程 → 系统浏览器；#锚点 → 暂忽略；
+    //   本地相对路径 → 按当前文件目录解析并归一化 `..`；
+    //     .md/.markdown/.txt → 编辑器内打开；其他本地文件 → 系统默认应用
     inst.onOpenLink((url) => {
-      void openUrl(url).catch((e) => console.error("open link failed:", e));
+      // mousedown + click 双触发，300ms 内去重
+      const now = Date.now();
+      if (now - lastLinkClickRef.current < 300) return;
+      lastLinkClickRef.current = now;
+      // openUrl 权限仅放行 http/https/mailto/tel；#锚点暂忽略（未来做文档内跳转）
+      if (/^(https?:|mailto:|tel:)/i.test(url)) {
+        void openUrl(url).catch((e) => console.error("open link failed:", e));
+        return;
+      }
+      if (/^(data:|ftp:|#)/i.test(url) || url.startsWith("#")) return;
+      const base = currentDirRef.current;
+      let abs = url;
+      if (!/^([a-zA-Z]:[\\/]|\\\\|[\\/])/.test(url)) {
+        if (!base) return; // 未命名文件无基准目录，无法解析相对路径
+        const sep = base.includes("\\") ? "\\" : "/";
+        abs = base.replace(/[\\/]+$/, "") + sep + url;
+      }
+      abs = normalizeLocalPath(abs);
+      if (SUPPORTED_FILE_RE.test(abs)) {
+        void openFileRef.current(abs, true);
+        return;
+      }
+      void openWithDefaultApp(abs).catch((e) => console.error("open file failed:", e));
     });
     editorRef.current = inst;
     return () => {
