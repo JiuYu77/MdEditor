@@ -22,7 +22,7 @@ jobs:
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: 计算版本与 tag
         id: version
         run: node -e "const v=require('./src-tauri/tauri.conf.json').version;require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'tag=v'+v+'\nversion='+v+'\n')"
@@ -76,7 +76,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: 安装 Linux 系统依赖（Tauri 2 需要 webkit2gtk-4.1）
         if: matrix.platform == 'ubuntu-22.04'
@@ -85,7 +85,7 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
       - name: 安装 Node.js（Vite 7 需要 20.19+/22.12+）
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
