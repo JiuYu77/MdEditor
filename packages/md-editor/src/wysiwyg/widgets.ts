@@ -54,24 +54,6 @@ export class TaskCheckboxWidget extends WidgetType {
   }
 }
 
-/** 分割线（--- / *** / ___ 整行替换为横线元素，宽度随内容区） */
-export class HrWidget extends WidgetType {
-  toDOM(): HTMLElement {
-    const wrap = document.createElement("span");
-    wrap.className = "md-hr-wrap";
-    const hr = document.createElement("hr");
-    hr.className = "md-hr";
-    wrap.appendChild(hr);
-    return wrap;
-  }
-  eq(_other: HrWidget): boolean {
-    return true;
-  }
-  ignoreEvent(): boolean {
-    return false;
-  }
-}
-
 /**
  * 链接（Markdown [text](url) 整段替换为链接 span）。
  * 不用拆分的标记 replace 隐藏 [ ] 与 (url)：行首/文档开头的单字符 replace 在

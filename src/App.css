@@ -1391,14 +1391,9 @@ body {
   text-decoration: line-through;
 }
 
-/* 分割线（--- / *** / ___ 整行替换）：横线铺满内容区 */
-.md-hr-wrap {
-  display: block;
-}
-.md-hr {
-  border: none;
-  border-top: 2px solid var(--md-hr-color, var(--border));
-  margin: 1.2em 0;
+/* 分割线（--- / *** / ___ 整行替换）：行高保持正常，2px 横线垂直居中（不撑高行） */
+.cm-line.md-hr {
+  background: linear-gradient(var(--md-hr-color, var(--border)), var(--md-hr-color, var(--border))) center / 100% 2px no-repeat;
 }
 
 .md-inline-code {

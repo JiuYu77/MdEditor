@@ -42,13 +42,19 @@ try {
   check("删除线 .md-strike 类", strike.hasMark);
   check("删除线样式 line-through", strike.deco === "line-through", strike.deco);
 
-  // 2) 分割线：整行替换为 .md-hr 横线元素
+  // 2) 分割线：整行替换为 md-hr 行类（行背景画横线），行高保持正常不撑高
   const hr = await page.evaluate(() => {
-    const hrs = document.querySelectorAll("#editor .md-hr");
-    return { count: hrs.length, border: hrs.length ? getComputedStyle(hrs[0]).borderTopWidth : null };
+    const lines = Array.from(document.querySelectorAll("#editor .cm-line"));
+    const hrLine = lines.find((l) => l.classList.contains("md-hr"));
+    return {
+      count: lines.filter((l) => l.classList.contains("md-hr")).length,
+      h: hrLine ? hrLine.getBoundingClientRect().height : null,
+      bg: hrLine ? getComputedStyle(hrLine).backgroundImage : null,
+    };
   });
-  check("分割线 .md-hr 渲染", hr.count >= 1, "count=" + hr.count);
-  check("分割线有可见上边框", hr.count >= 1 && parseFloat(hr.border) > 0, hr.border);
+  check("分割线行存在 (md-hr)", hr.count >= 1, "count=" + hr.count);
+  check("分割线行高正常(<32px)", hr.h != null && hr.h < 32, "h=" + hr.h);
+  check("分割线有背景横线", !!hr.bg && hr.bg !== "none", hr.bg);
 
   // 3) 转义符：反斜杠隐藏，字符正常显示
   const esc = await page.evaluate(() => {

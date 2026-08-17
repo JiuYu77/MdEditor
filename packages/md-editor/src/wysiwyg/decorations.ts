@@ -5,7 +5,7 @@
 import { RangeSetBuilder } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
-import { BulletWidget, OrderedItemWidget, TaskCheckboxWidget, ImageWidget, LinkWidget, HrWidget } from "./widgets";
+import { BulletWidget, OrderedItemWidget, TaskCheckboxWidget, ImageWidget, LinkWidget } from "./widgets";
 import { CodeBlockToolbarWidget } from "./codeBlock";
 import { buildTableDecorations } from "./table";
 import { FENCE_CLOSE_RE, FENCE_OPEN_RE, nodeEndLine } from "./tree";
@@ -243,9 +243,12 @@ export function buildWysiwygDecorations(view: EditorView, cursorLine = 0): Decor
         items.push({ from, to, deco: Decoration.replace({}) });
       }
 
-      // 分割线（--- / *** / ___）：整行替换为横线元素（Typora 式）
+      // 分割线（--- / *** / ___）：整行文本替换为空 + 行类 md-hr，
+      // 由 CSS 以行背景画 2px 横线（行高保持正常，不额外撑高）
       else if (name === "HorizontalRule") {
-        items.push({ from, to, deco: Decoration.replace({ widget: new HrWidget() }) });
+        const line = doc.lineAt(from);
+        items.push({ from, to, deco: Decoration.replace({}) });
+        items.push({ from: line.from, to: line.from, deco: Decoration.line({ class: "md-hr" }) });
       }
 
       // 转义符（\* \# \~ 等）：隐藏反斜杠，仅显示转义后的字符
