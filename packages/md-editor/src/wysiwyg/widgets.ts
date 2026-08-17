@@ -1,6 +1,6 @@
 /**
  * WYSIWYG 自定义 Widget（@mdeditor/md-editor 内部）
- * 列表圆点 / 有序序号 / 任务复选框 —— 替换对应语法标记的 DOM 元素
+ * 列表圆点 / 有序序号 / 任务复选框 / 分割线 —— 替换对应语法标记的 DOM 元素
  */
 import { WidgetType } from "@codemirror/view";
 
@@ -48,6 +48,24 @@ export class TaskCheckboxWidget extends WidgetType {
   }
   eq(other: TaskCheckboxWidget): boolean {
     return other.checked === this.checked;
+  }
+  ignoreEvent(): boolean {
+    return false;
+  }
+}
+
+/** 分割线（--- / *** / ___ 整行替换为横线元素，宽度随内容区） */
+export class HrWidget extends WidgetType {
+  toDOM(): HTMLElement {
+    const wrap = document.createElement("span");
+    wrap.className = "md-hr-wrap";
+    const hr = document.createElement("hr");
+    hr.className = "md-hr";
+    wrap.appendChild(hr);
+    return wrap;
+  }
+  eq(_other: HrWidget): boolean {
+    return true;
   }
   ignoreEvent(): boolean {
     return false;

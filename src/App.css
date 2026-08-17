@@ -1386,6 +1386,21 @@ body {
   font-style: italic;
 }
 
+/* 删除线（GFM ~~text~~）：内容加删除线 */
+.md-strike {
+  text-decoration: line-through;
+}
+
+/* 分割线（--- / *** / ___ 整行替换）：横线铺满内容区 */
+.md-hr-wrap {
+  display: block;
+}
+.md-hr {
+  border: none;
+  border-top: 2px solid var(--md-hr-color, var(--border));
+  margin: 1.2em 0;
+}
+
 .md-inline-code {
   background: var(--hover);
   border-radius: 4px;

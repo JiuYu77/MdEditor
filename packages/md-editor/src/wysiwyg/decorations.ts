@@ -5,7 +5,7 @@
 import { RangeSetBuilder } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
-import { BulletWidget, OrderedItemWidget, TaskCheckboxWidget, ImageWidget, LinkWidget } from "./widgets";
+import { BulletWidget, OrderedItemWidget, TaskCheckboxWidget, ImageWidget, LinkWidget, HrWidget } from "./widgets";
 import { CodeBlockToolbarWidget } from "./codeBlock";
 import { buildTableDecorations } from "./table";
 import { FENCE_CLOSE_RE, FENCE_OPEN_RE, nodeEndLine } from "./tree";
@@ -240,6 +240,24 @@ export function buildWysiwygDecorations(view: EditorView, cursorLine = 0): Decor
       } else if (name === "CodeInfo") {
         // 语言文本由工具栏 chip 展示：围栏行也完全移除，
         // 否则 ```c 首行会显示 chip "c" + 原文 "c" 两个（用户反馈 "C c" 即此残留）
+        items.push({ from, to, deco: Decoration.replace({}) });
+      }
+
+      // 分割线（--- / *** / ___）：整行替换为横线元素（Typora 式）
+      else if (name === "HorizontalRule") {
+        items.push({ from, to, deco: Decoration.replace({ widget: new HrWidget() }) });
+      }
+
+      // 转义符（\* \# \~ 等）：隐藏反斜杠，仅显示转义后的字符
+      // （Escape 节点 [from,to] 覆盖 "\X" 两个字符，只移除第一个反斜杠）
+      else if (name === "Escape") {
+        items.push({ from, to: from + 1, deco: Decoration.replace({}) });
+      }
+
+      // 删除线（GFM ~~text~~）：~~ 标记移除 + 内容加删除线样式
+      else if (name === "Strikethrough") {
+        items.push({ from, to, deco: Decoration.mark({ class: "md-strike" }) });
+      } else if (name === "StrikethroughMark") {
         items.push({ from, to, deco: Decoration.replace({}) });
       }
 
