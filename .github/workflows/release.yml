@@ -78,18 +78,11 @@ jobs:
         id: version
         run: node -e "const v=require('./src-tauri/tauri.conf.json').version;require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'tag=v'+v+'\nversion='+v+'\n')"
 
-      # 全部平台关闭自动上传：构建后先重命名、处理 DMG 图标，再统一由 softprops 上传
+      # 直接用 CLI 构建，不用 tauri-action 上传：
+      # 实测 uploadReleaseAssets: false 无效（tauri-action 仍会上传旧命名资产，
+      # 导致 Release 里新旧两套文件并存）；构建后统一重命名 + softprops 上传
       - name: 构建安装包
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__
-          releaseName: "MdEditor v__VERSION__"
-          releaseBody: "请见下方附件下载对应平台的安装包。\n\n- Windows: .msi / .exe (NSIS)\n- macOS: .dmg / .app\n- Linux: .deb / .AppImage / .rpm"
-          releaseDraft: true
-          prerelease: false
-          uploadReleaseAssets: false
+        run: npm run tauri build -- ${{ matrix.args }}
 
       # macOS 专用：把软件图标挂到 DMG 卷上（Finder 挂载时/文件管理器显示软件图标）
       # 注意：hdiutil convert -o 会自动补 .dmg 后缀，临时文件名显式带 .dmg
@@ -115,12 +108,12 @@ jobs:
             echo "==> 完成: $DMG"
           done
 
-      # 重命名：文件名带 系统-架构-版本（shell: bash，Windows runner 自带 Git Bash）
+      # 重命名：文件名带 系统-架构-版本（版本带 v 前缀，如 v0.1.0）
       - name: 重命名安装包（系统-架构-版本）
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.version.outputs.tag }}"
           cd src-tauri/target/release/bundle
           case "${{ matrix.platform }}" in
             windows-latest)
@@ -144,11 +137,13 @@ jobs:
               ;;
           esac
 
-      # 统一上传（release 由 tauri-action 创建，此处仅追加资产）
+      # 统一上传（release 由 softprops 创建，多 job 并发时先到先建、其余追加资产）
       - name: 上传安装包到 Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
+          name: "MdEditor ${{ steps.version.outputs.version }}"
+          body: "请见下方附件下载对应平台的安装包。"
           draft: true
           prerelease: false
           files: ${{ matrix.upload_files }}
