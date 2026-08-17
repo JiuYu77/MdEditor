@@ -1,0 +1,111 @@
+# MdEditor 三平台自动打包发布（Linux / Windows / macOS）
+# 触发方式：
+#   1) 推送形如 v0.1.0 的 git tag（推荐）：git tag v0.1.0 && git push origin v0.1.0
+#   2) 在 Actions 页面手动运行（workflow_dispatch）
+# 产物：GitHub 自动创建一个 Draft Release，附件为各平台安装包。
+# macOS 额外处理：DMG 卷图标设置为软件图标（hdiutil + SetFile 后处理）。
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-latest" # Apple Silicon（M 系列）
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest" # Intel Mac
+            args: "--target x86_64-apple-darwin"
+          - platform: "ubuntu-22.04" # Linux（deb / AppImage / rpm）
+            args: ""
+          - platform: "windows-latest" # Windows（NSIS / MSI）
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Linux 系统依赖（Tauri 2 需要 webkit2gtk-4.1）
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - name: 安装 Node.js（Vite 7 需要 20.19+/22.12+）
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安装 Rust（stable，macOS 双架构 target）
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust 增量编译缓存
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: 安装前端依赖（npm workspaces 含 @mdeditor/* 本地包）
+        run: npm install
+
+      # macOS 专用：计算 Release tag（softprops 上传需要；与 tauri-action 的 v__VERSION__ 一致）。
+      # 仅 macOS 运行——Windows runner 默认 PowerShell，bash 语法 $(...) 会失败
+      - name: 计算 Release tag
+        if: startsWith(matrix.platform, 'macos')
+        id: version
+        run: echo "tag=v$(node -p \"require('./src-tauri/tauri.conf.json').version\")" >> "$GITHUB_OUTPUT"
+
+      # macOS 关闭自动上传：DMG 需先做卷图标后处理再上传（tauri-action 上传的 DMG 是通用磁盘图标）
+      - name: 构建安装包（macOS 跳过自动上传）
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: "MdEditor v__VERSION__"
+          releaseBody: "请见下方附件下载对应平台的安装包。\n\n- Windows: .msi / .exe (NSIS)\n- macOS: .dmg / .app\n- Linux: .deb / .AppImage / .rpm"
+          releaseDraft: true
+          prerelease: false
+          uploadReleaseAssets: ${{ !startsWith(matrix.platform, 'macos') }}
+
+      # macOS 专用：把软件图标挂到 DMG 卷上（Finder 挂载时/文件管理器显示软件图标）
+      - name: 设置 DMG 卷图标（软件图标）
+        if: startsWith(matrix.platform, 'macos')
+        run: |
+          set -euo pipefail
+          ICNS="src-tauri/icons/icon.icns"
+          for DMG in src-tauri/target/release/bundle/dmg/*.dmg; do
+            [ -e "$DMG" ] || { echo "未找到 DMG 文件"; exit 1; }
+            echo "==> 处理 $DMG"
+            hdiutil convert "$DMG" -format UDRW -o "$DMG.rw"
+            VOL=$(hdiutil attach "$DMG.rw" -nobrowse | awk -F'\t' '/\/Volumes\// {print $NF; exit}')
+            echo "    挂载点: $VOL"
+            cp "$ICNS" "$VOL/.VolumeIcon.icns"
+            SetFile -a C "$VOL"
+            hdiutil detach "$VOL" -quiet
+            hdiutil convert "$DMG.rw" -format UDZO -o "$DMG.final"
+            rm -f "$DMG.rw"
+            mv "$DMG.final" "$DMG"
+            echo "==> 完成: $DMG"
+          done
+
+      # macOS 专用：上传处理后的 DMG（release 由 tauri-action 已创建，此处仅追加资产）
+      - name: 上传 DMG 到 Release
+        if: startsWith(matrix.platform, 'macos')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          draft: true
+          prerelease: false
+          files: src-tauri/target/release/bundle/dmg/*.dmg
