@@ -156,7 +156,14 @@ $env:REPRO_URL="http://localhost:5174/repro/app-test.html"; node repro/test35.mj
 
 ## 📦 应用图标
 
-图标由 `design/icon.svg` 设计生成（蓝渐变圆角方块 + 白色几何 **M** 标记，极简风格），通过 `npx tauri icon design/icon-1024.png` 生成全套（`src-tauri/icons/`）。
+图标源文件 `design\icon-2048_3-透明背景.png`。
+
+生成流程：
+```bash
+npx tauri icon design/icon-1024.png # 用 PNG 源生成全套（src-tauri/icons/）
+```
+
+生成后需要**重新编译**，图标才能生效。
 
 ## 📝 License
 
