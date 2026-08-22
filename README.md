@@ -160,4 +160,4 @@ $env:REPRO_URL="http://localhost:5174/repro/app-test.html"; node repro/test35.mj
 
 ## 📝 License
 
-私有项目（内部使用）。
+[MIT](LICENSE) © 2026 苦不闲
