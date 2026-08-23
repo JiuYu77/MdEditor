@@ -281,6 +281,103 @@ function normalizeModeToggles(v: boolean | ModeToggles | undefined, def: ModeTog
 
 /* ─────────────────────────── createEditor ─────────────────────────── */
 
+/** 图片源码编辑覆盖层（WYSIWYG 下点击图片在图上编辑 ![alt](url)）
+ * Ctrl+S / Ctrl+Enter 写回并触发保存（显式保存）；Esc 取消；失焦仅写回（标记未保存，不自动保存）。
+ * 覆盖层跟随滚动/缩放一起移动（监听编辑区 scroll 与窗口 resize 实时重新定位到图片）。 */
+let imageOverlay: HTMLDivElement | null = null;
+let imageOverlayCleanup: (() => void) | null = null;
+function closeImageOverlay(
+  writeBack: boolean,
+  save: boolean,
+  view: EditorView,
+  from: number,
+  to: number,
+  original: string,
+  saveHandler?: () => void,
+) {
+  if (!imageOverlay) return;
+  const overlay = imageOverlay;
+  imageOverlay = null;
+  // 清理滚动/缩放监听
+  imageOverlayCleanup?.();
+  imageOverlayCleanup = null;
+  const text = overlay.textContent ?? "";
+  overlay.remove();
+  if (writeBack && text !== original) {
+    // 写回文档：触发 onChange → 宿主置 dirty（未保存标记，与普通内容修改一致）
+    view.dispatch({ changes: { from, to, insert: text }, userEvent: "input" });
+    // 仅显式 Ctrl+S / Ctrl+Enter 才触发保存；blur 等失焦只标记未保存，不自动保存
+    if (save) saveHandler?.();
+  }
+  // 关闭后焦点回到编辑器，后续 Ctrl+S 才能由编辑器保存
+  view.focus();
+}
+function openImageOverlay(view: EditorView, el: HTMLElement, saveHandler?: () => void) {
+  // 已有一个覆盖层：先关闭（不写回，避免误提交）
+  if (imageOverlay) closeImageOverlay(false, false, view, 0, 0, "");
+  const from = Number(el.dataset.from);
+  const to = Number(el.dataset.to);
+  if (Number.isNaN(from) || Number.isNaN(to)) return;
+  const original = view.state.doc.sliceString(from, to);
+  // 覆盖层宽度与 CodeMirror 编辑区(contentDOM)一致,左边与编辑区对齐
+  const overlay = document.createElement("div");
+  overlay.className = "md-image-overlay";
+  overlay.contentEditable = "true";
+  overlay.textContent = original;
+  // 定位到图片(跟随滚动)：左缘对齐编辑区、顶部对齐图片、宽度=编辑区宽度
+  // 图片滚出编辑区可视范围(含滚到菜单栏/工具条以上)时隐藏覆盖层，避免残影
+  const position = () => {
+    const r = el.getBoundingClientRect();
+    const sc = view.scrollDOM.getBoundingClientRect();
+    // 用【图片顶部】判断：顶部一进入编辑区顶(即菜单栏底)就隐藏，
+    // 避免图片顶部已滚进菜单栏、底部还在编辑区时覆盖层仍压在菜单栏上
+    const inView = r.top > sc.top + 2 && r.top < sc.bottom - 2;
+    if (!inView) {
+      overlay.style.display = "none";
+      return;
+    }
+    const cr = view.contentDOM.getBoundingClientRect();
+    overlay.style.display = "block";
+    overlay.style.left = cr.left + "px";
+    overlay.style.top = r.top + "px";
+    overlay.style.width = cr.width + "px";
+  };
+  position();
+  overlay.spellcheck = false;
+  document.body.appendChild(overlay);
+  imageOverlay = overlay;
+  // 滚动/缩放时跟随图片一起移动
+  view.scrollDOM.addEventListener("scroll", position);
+  window.addEventListener("resize", position);
+  imageOverlayCleanup = () => {
+    view.scrollDOM.removeEventListener("scroll", position);
+    window.removeEventListener("resize", position);
+  };
+  overlay.focus();
+  // 全选，方便直接改整段源码
+  const gs = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(overlay);
+  gs?.removeAllRanges();
+  gs?.addRange(range);
+  const close = (writeBack: boolean, save: boolean) =>
+    closeImageOverlay(writeBack, save, view, from, to, original, saveHandler);
+  overlay.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close(false, false);
+    } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      close(true, true);
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      close(true, true);
+    }
+  });
+  // 失焦（点击别处）：仅写回标记未保存，不自动保存
+  overlay.addEventListener("blur", () => close(true, false));
+}
+
 /**
  * 创建 Markdown 编辑器实例（CodeMirror 6）
  * - 源码模式：纯 Markdown 源码
@@ -420,6 +517,13 @@ export function createEditor(el: HTMLElement, options: EditorOptions = {}): Edit
             if (url && openLinkHandler) openLinkHandler(url);
             return true; // preventDefault：不移动光标，链接保持渲染可继续悬停
           }
+          // 点击图片：不切回源码，而是在图上打开源码编辑覆盖层（编辑后可 Ctrl+S 保存）
+          // (成功图 .md-image / 失败图 .md-image-error 均为可点击，打开同一编辑覆盖层)
+          const img = target?.closest?.(".md-image, .md-image-error") as HTMLElement | null;
+          if (img) {
+            openImageOverlay(view, img, saveHandler);
+            return true;
+          }
           if (!target || !target.closest(".md-task-checkbox")) {
             // 点击表格单元格：确定性光标定位（Typora 式，见 table.ts tableCellTargetPos）。
             // 在 mousedown 即修正——CM6 posAtCoords 对 flex 单元格内换行文本定位不准
@@ -432,6 +536,23 @@ export function createEditor(el: HTMLElement, options: EditorOptions = {}): Edit
               if (pos !== cmPos) {
                 view.dispatch({ selection: { anchor: pos }, userEvent: "select.pointer" });
                 return true; // preventDefault：阻止默认的坐标→位置映射
+              }
+            }
+            // 点击表格分隔行(表头下方空行)：光标不要进入该空行，而是重定向到
+            // 同列的上方表头(或下方首个数据)单元格
+            const dividerLine = target?.closest?.(".cm-line.md-table-divider") as HTMLElement | null;
+            if (dividerLine) {
+              const row = (dividerLine.previousElementSibling || dividerLine.nextElementSibling) as HTMLElement | null;
+              if (row) {
+                const c = Array.from(row.querySelectorAll<HTMLElement>(".md-table-cell")).find((el) => {
+                  const r = el.getBoundingClientRect();
+                  return event.clientX >= r.left && event.clientX <= r.right;
+                });
+                if (c && c.dataset.from != null) {
+                  const pos = tableCellTargetPos(view, c, event.clientX, event.clientY);
+                  view.dispatch({ selection: { anchor: pos }, userEvent: "select.pointer" });
+                  return true;
+                }
               }
             }
             return false;
@@ -462,6 +583,8 @@ export function createEditor(el: HTMLElement, options: EditorOptions = {}): Edit
             if (url && openLinkHandler) openLinkHandler(url);
             return true;
           }
+          // 图片点击：覆盖层已在 mousedown 打开，这里 preventDefault 防止光标落到图片行切源码
+          if (target?.closest?.(".md-image, .md-image-error")) return true;
           const cell = target?.closest?.(".md-table-cell") as HTMLElement | null;
           if (cell && cell.dataset.from != null) {
             const sel = view.state.selection.main;

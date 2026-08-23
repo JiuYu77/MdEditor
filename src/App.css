@@ -1446,6 +1446,30 @@ body {
   display: block;
   max-width: 100%;
   border-radius: 4px;
+  cursor: pointer;
+}
+.md-image-wrap:hover .md-image {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+}
+
+/* 图片源码编辑覆盖层：点击图片时浮在图上，contenteditable 显示 ![alt](url)，可编辑，Ctrl+S 保存 */
+.md-image-overlay {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(20, 24, 30, 0.92);
+  color: #fff;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  outline: none;
 }
 
 .md-image-error {

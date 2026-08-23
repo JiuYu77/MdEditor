@@ -168,11 +168,14 @@ function resolveImageUrl(url: string): string {
   return imageUrlResolver ? imageUrlResolver(url) : defaultImageUrlResolver(url);
 }
 
-/** 图片（Markdown ![alt](url) 替换为 <img>；加载失败显示 [alt] 提示，主流实现同款） */
+/** 图片（Markdown ![alt](url) 替换为 <img>；加载失败显示 [alt] 提示，主流实现同款）
+ * 提供 from/to（文档区间），点击图片时编辑器据此打开源码编辑覆盖层（见 index.ts）。 */
 export class ImageWidget extends WidgetType {
   constructor(
     private url: string,
     private alt: string,
+    private from: number,
+    private to: number,
   ) {
     super();
   }
@@ -184,16 +187,24 @@ export class ImageWidget extends WidgetType {
     img.src = resolveImageUrl(this.url);
     img.alt = this.alt;
     img.draggable = false;
+    // 记录文档区间，供点击时定位源码编辑覆盖层
+    img.dataset.from = String(this.from);
+    img.dataset.to = String(this.to);
     img.onerror = () => {
-      // 加载失败（网络/本地路径无效等）：显示 [alt] 占位提示
-      span.textContent = `[${this.alt || "图片加载失败"}]`;
+      // 加载失败：默认显示 [alt] 文字（可点击，点击打开源码编辑覆盖层，见 index.ts）
       span.className = "md-image-wrap md-image-error";
+      span.textContent = `[${this.alt}]`;
+      span.style.cursor = "pointer";
+      // 记录文档区间，供点击时定位源码编辑覆盖层
+      span.dataset.from = String(this.from);
+      span.dataset.to = String(this.to);
     };
     span.appendChild(img);
     return span;
   }
   eq(other: ImageWidget): boolean {
-    return other.url === this.url && other.alt === this.alt;
+    // 位置也参与比较：文档偏移变化时重建 widget，确保 img.dataset.from/to 与当前文档一致
+    return other.url === this.url && other.alt === this.alt && other.from === this.from && other.to === this.to;
   }
   ignoreEvent(): boolean {
     return false;

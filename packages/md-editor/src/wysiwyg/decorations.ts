@@ -51,16 +51,18 @@ export function buildWysiwygDecorations(view: EditorView, cursorLine = 0): Decor
       const nodeLine = doc.lineAt(from).number;
 
       // 光标所在行：不做装饰（保留 Markdown 源码可见）——
-      // 但代码围栏、标题、表格除外：代码块始终渲染为容器（不显示源码，语言经工具栏切换）；
+      // 但代码围栏、标题、表格、图片除外：代码块始终渲染为容器（不显示源码，语言经工具栏切换）；
       // 标题行不显示源码，改为左侧显示级别提示（H1~H6）；
-      // 表格行聚焦时保持渲染（配合表格操作工具条，见 table.ts）
+      // 表格行聚焦时保持渲染（配合表格操作工具条，见 table.ts）；
+      // 图片行聚焦时保持渲染（点击图片打开源码编辑覆盖层，见 index.ts，不切回源码）
       if (
         cursorLine > 0 &&
         nodeLine === cursorLine &&
         name !== "FencedCode" &&
         !fenceLines.has(nodeLine) &&
         !isHeadingNode(name) &&
-        name !== "Table"
+        name !== "Table" &&
+        name !== "Image"
       )
         return;
 
@@ -302,7 +304,7 @@ export function buildWysiwygDecorations(view: EditorView, cursorLine = 0): Decor
         const text = doc.sliceString(from, to);
         const m = /^!\[([\s\S]*?)\]\((.*?)\)$/.exec(text);
         if (m) {
-          items.push({ from, to, deco: Decoration.replace({ widget: new ImageWidget(m[2], m[1]) }) });
+          items.push({ from, to, deco: Decoration.replace({ widget: new ImageWidget(m[2], m[1], from, to) }) });
         }
       }
     };
